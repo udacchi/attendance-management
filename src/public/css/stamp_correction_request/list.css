@@ -1,0 +1,110 @@
+:root{
+  --page-bg:#1f1f1f;
+  --canvas:#efeff3;
+  --panel:#fff;
+  --text:#1a1a1a;
+  --muted:#696969;
+  --border:#e6e6eb;
+  --border-strong:#dcdce2;
+  --chip:#f4f4f7;
+  --shadow:0 10px 26px rgba(0,0,0,.30);
+}
+
+body{ background:var(--page-bg); }
+
+/* キャンバス */
+.scr-list{ padding:32px 16px 64px; }
+.scr-list__inner{
+  background:var(--canvas);
+  width:min(1040px, 100%);
+  margin:0 auto;
+  padding:36px 32px 56px;
+  box-shadow:var(--shadow);
+}
+
+/* タイトル（左の縦線アクセント） */
+.page-title{
+  position:relative;
+  margin:8px 0 18px;
+  font-size:22px;
+  font-weight:700;
+  color:var(--text);
+}
+.page-title::before{
+  content:"";
+  position:absolute;
+  left:-16px; top:2px;
+  width:4px; height:24px;
+  background:#111;
+  border-radius:2px;
+}
+
+/* タブ */
+.tabs{
+  width:min(760px, 100%);
+  margin:10px auto 16px;
+  display:flex;
+  gap:28px;
+  border-bottom:1px solid var(--border-strong);
+}
+.tab{
+  display:inline-block;
+  padding:8px 6px 10px;
+  font-weight:700;
+  color:#2a2a2a;
+  text-decoration:none;
+}
+.tab.is-active{
+  border-bottom:3px solid #111;
+}
+
+/* テーブル */
+.table-wrap{
+  width:min(760px, 100%);
+  margin:8px auto 0;
+}
+.table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  background:var(--panel);
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 1px 0 rgba(0,0,0,.02);
+  font-variant-numeric:tabular-nums;
+}
+.table thead th{
+  background:#f7f7fa;
+  color:#333;
+  text-align:left;
+  font-weight:700;
+  font-size:14px;
+  padding:14px 18px;
+  border-bottom:1px solid var(--border-strong);
+}
+.table tbody td{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  font-size:14px;
+  color:#222;
+}
+.table tbody tr:last-child td{ border-bottom:none; }
+
+.cell--status{ width:14%; color:#222; }
+.cell--name{ width:18%; }
+.cell--datetime{ width:16%; letter-spacing:.02em; }
+.cell--reason{ width:32%; color:#333; }
+.cell--link{ width:10%; }
+
+.detail-link{
+  color:#111;
+  text-decoration:none;
+  font-weight:700;
+}
+.detail-link:hover{ text-decoration:underline; }
+
+.cell--empty{
+  text-align:center;
+  color:var(--muted);
+  padding:28px 12px;
+}

@@ -1,0 +1,67 @@
+.verify-page {
+  min-height: 100vh;
+  background: #f6f6f6; /* 共通ヘッダーの下が明るい背景になる想定 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.verify-card {
+  width: 920px;                  /* スクショの白枠幅に合わせる */
+  background: #fff;
+  margin: 24px auto 64px;
+  padding: 80px 40px 96px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.verify-message {
+  color: #111;
+  line-height: 1.9;
+  margin-bottom: 28px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 中央のグレーボタン（装飾用。動作はメール内リンク） */
+.verify-btn {
+  display: inline-block;
+  min-width: 180px;
+  height: 38px;
+  padding: 0 20px;
+  line-height: 38px;
+  background: #e6e6e6;
+  color: #222;
+  border: 1px solid #bdbdbd;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 700;
+  cursor: default;
+  user-select: none;
+}
+
+/* 再送リンク（POSTボタンをリンク風に） */
+.resend-form {
+  margin-top: 18px;
+}
+.resend-link {
+  background: transparent;
+  border: none;
+  color: #0071e3;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* 送信完了のフラッシュ */
+.flash {
+  display: inline-block;
+  background: #eef7ff;
+  color: #0b63b4;
+  border: 1px solid #cfe6ff;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
+  margin-bottom: 16px;
+}

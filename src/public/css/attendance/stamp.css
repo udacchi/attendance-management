@@ -1,0 +1,108 @@
+:root{
+  --page-bg:#1f1f1f;
+  --canvas:#efeff3;
+  --text:#101010;
+  --muted:#7a7a7a;
+  --panel:#fff;
+  --black:#000;
+  --white:#fff;
+  --shadow:0 10px 26px rgba(0,0,0,.30);
+  --radius:12px;
+}
+
+body{ background:var(--page-bg); }
+
+.attend-page{
+  padding:32px 16px 64px;
+}
+
+.attend-hero{
+  width:min(1040px, 100%);
+  margin:0 auto;
+  background:var(--canvas);
+  box-shadow:var(--shadow);
+  padding:56px 24px 120px;
+  text-align:center;
+}
+
+/* ステータスバッジ */
+.attend-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:28px;
+  padding:0 12px;
+  border-radius:999px;
+  font-size:12px;
+  letter-spacing:.06em;
+  margin-top:24px;
+}
+.attend-badge--muted{
+  background:#ededf0;
+  color:#3a3a3a;
+  border:1px solid #e3e3e8;
+}
+
+/* 日付・時刻 */
+.attend-date{
+  margin:18px 0 0;
+  font-size:28px;
+  font-weight:700;
+  color:var(--text);
+}
+.attend-time{
+  margin:18px 0 28px;
+  font-size:80px;
+  font-weight:800;
+  letter-spacing:.04em;
+  color:var(--text);
+}
+
+/* アクション */
+.attend-actions{
+  display:flex;
+  gap:24px;
+  justify-content:center;
+  align-items:center;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:180px;
+  height:56px;
+  padding:0 28px;
+  border-radius:14px;
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.08em;
+  cursor:pointer;
+  transition:opacity .15s ease, transform .02s ease-in;
+  border:1px solid transparent;
+}
+.btn:active{ transform:translateY(1px); }
+.btn.is-loading{ opacity:.7; cursor:default; }
+
+.btn--primary{
+  background:var(--black);
+  color:var(--white);
+}
+.btn--primary:hover{ opacity:.92; }
+
+.btn--ghost{
+  background:var(--white);
+  color:#111;
+  border-color:#ddd;
+  box-shadow:0 1px 0 rgba(0,0,0,.04) inset;
+}
+.btn--ghost:hover{ opacity:.96; }
+
+/* 退勤済メッセージ */
+.attend-message{
+  margin-top:24px;
+  font-weight:700;
+  color:#2b2b2b;
+}

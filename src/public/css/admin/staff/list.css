@@ -1,0 +1,96 @@
+:root{
+  --page-bg:#1f1f1f;
+  --canvas:#efeff3;
+  --panel:#fff;
+  --text:#1a1a1a;
+  --muted:#666;
+  --border:#e6e6eb;
+  --border-strong:#dcdce2;
+  --shadow:0 10px 26px rgba(0,0,0,.30);
+  --radius:10px;
+}
+
+body{ background:var(--page-bg); }
+
+/* キャンバス */
+.admin-staff-list{ padding:32px 16px 64px; }
+.admin-staff-list__inner{
+  background:var(--canvas);
+  width:min(1040px, 100%);
+  margin:0 auto;
+  padding:36px 32px 56px;
+  box-shadow:var(--shadow);
+}
+
+/* タイトル（左側アクセント線） */
+.page-title{
+  position:relative;
+  margin:8px 0 20px;
+  font-size:22px;
+  font-weight:700;
+  color:var(--text);
+}
+.page-title::before{
+  content:"";
+  position:absolute;
+  left:-16px; top:2px;
+  width:4px; height:24px;
+  background:#111;
+  border-radius:2px;
+}
+
+/* テーブル */
+.staff-table__wrap{
+  width:min(640px, 100%);
+  margin: 8px auto 0;
+}
+.staff-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  background:var(--panel);
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 1px 0 rgba(0,0,0,.02);
+}
+.staff-table thead th{
+  background:#f7f7fa;
+  color:#333;
+  text-align:left;
+  font-weight:700;
+  font-size:14px;
+  padding:14px 18px;
+  border-bottom:1px solid var(--border-strong);
+}
+.staff-table tbody td{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  font-size:14px;
+  color:#222;
+}
+.staff-table tbody tr:last-child td{ border-bottom:none; }
+
+.cell--name{ width:32%; }
+.cell--email{ width:48%; word-break:break-all; }
+.cell--link{ width:20%; }
+
+/* リンク */
+.name-link{
+  color:#111;
+  text-decoration:none;
+  font-weight:700; /* クリックできることを少し強調 */
+}
+.name-link:hover{ text-decoration:underline; }
+
+.detail-link{
+  color:#111;
+  font-weight:700;
+  text-decoration:none;
+}
+.detail-link:hover{ text-decoration:underline; }
+
+.cell--empty{
+  text-align:center;
+  color:var(--muted);
+  padding:28px 12px;
+}

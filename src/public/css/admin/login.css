@@ -1,0 +1,94 @@
+/* ---- Page base ---- */
+:root{
+  --page-bg:#1f1f1f;
+  --panel-bg:#ffffff;
+  --text:#111;
+  --muted:#666;
+  --border:#cfcfcf;
+  --shadow:0 10px 26px rgba(0,0,0,.35);
+  --black:#000;
+  --white:#fff;
+}
+
+html,body{height:100%;}
+body{background:var(--page-bg);}
+
+/* ---- Layout ---- */
+.admin-login{
+  padding: 32px 16px 64px;
+}
+
+.admin-login__panel{
+  background:var(--panel-bg);
+  width:min(960px, 100%);
+  margin:24px auto 0;
+  padding:72px 32px 88px;
+  box-shadow:var(--shadow);
+}
+
+.admin-login__title{
+  margin:0 0 40px;
+  font-size:28px;
+  line-height:1.3;
+  font-weight:700;
+  text-align:center;
+  color:var(--text);
+}
+
+/* ---- Form ---- */
+.admin-login__form{
+  width:min(720px, 100%);
+  margin:0 auto;
+}
+
+.form-group{ margin-top:28px; }
+.form-group:first-of-type{ margin-top:0; }
+
+.form-label{
+  display:block;
+  font-size:16px;
+  font-weight:600;
+  color:var(--text);
+  margin-bottom:10px;
+}
+
+.form-input{
+  display:block;
+  width:100%;
+  height:48px;
+  padding:12px 14px;
+  font-size:16px;
+  border:1px solid var(--border);
+  border-radius:4px;
+  outline:0;
+  background:#fff;
+}
+
+.form-input:focus{
+  border-color:#999;
+  box-shadow:0 0 0 3px rgba(0,0,0,.06);
+}
+
+.form-error{
+  margin-top:8px;
+  font-size:14px;
+  color:#c62828; /* 目立ちすぎない赤 */
+}
+
+/* ---- Button ---- */
+.admin-login__button{
+  display:block;
+  width:min(520px, 100%);
+  height:52px;
+  margin:36px auto 0;
+  border:none;
+  border-radius:6px;
+  background:var(--black);
+  color:var(--white);
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  transition:opacity .15s ease;
+}
+
+.admin-login__button:hover{ opacity:.9; }

@@ -1,0 +1,213 @@
+/* ===========================================
+   一般ユーザー共通レイアウト（スクショ準拠）
+   - 黒いヘッダー帯
+   - 薄いグレーのページ背景
+   - 中央 960px コンテナ
+   =========================================== */
+
+   :root{
+    --page-bg: #efeff2;
+    --header-bg: #0d0d0d;
+    --text: #111;
+    --muted: #6b7280;
+    --white: #fff;
+    --container: 960px;
+    --radius: 12px;
+    --shadow: 0 10px 30px rgba(0,0,0,.06);
+    --primary: #111; /* ボタンは黒基調 */
+  }
+  
+  html, body { height: 100%; }
+  body.site-body{
+    min-height: 100%;
+    background: var(--page-bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, "Noto Sans JP",
+                 "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  }
+  
+  /* コンテナ（中央寄せ） */
+  .container{
+    width: min(100%, calc(var(--container) + 32px));
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+  
+  /* ===== ヘッダー（黒帯） ===== */
+  .site-header{
+    background: var(--header-bg);
+    color: var(--white);
+  }
+  .site-header__inner{
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: min(100%, calc(var(--container) + 32px));
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+  
+  /* ロゴ（CT + COACHTECH） */
+  .site-logo{
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .site-logo__mark{
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 24px;
+    border-radius: 4px;
+    background: #fff;
+    color: #000;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: .06em;
+  }
+  .site-logo__text{
+    color: var(--white);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: .04em;
+  }
+  
+  /* 右ナビ（ログイン後のみ表示） */
+  .global-nav__list{
+    display: flex;
+    gap: 28px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .global-nav__link{
+    display: inline-flex;
+    align-items: center;
+    color: var(--white);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 10px 0;
+    position: relative;
+    opacity: .95;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+  .global-nav__link:hover{ opacity: 1; }
+  .global-nav__link.is-active::after{
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 6px;
+    height: 2px;
+    background: var(--white);
+  }
+  .global-nav__logout{
+    padding: 6px 12px;
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 999px;
+  }
+  
+  /* ===== メイン余白 ===== */
+  .site-main{ padding-block: 40px; }
+  
+  /* ===== ログイン/登録 用の中央カード ===== */
+  .auth-card{
+    width: min(720px, 100%);
+    margin: 56px auto;
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 40px 48px;
+  }
+  .auth-card__title{
+    text-align: center;
+    font-weight: 800;
+    font-size: 24px;
+    margin-bottom: 24px;
+  }
+  
+  /* フォーム基本 */
+  .form-group{ margin-top: 24px; }
+  .label{
+    display: block;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .input, .select{
+    width: 100%;
+    height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: var(--white);
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+  .input:focus, .select:focus{
+    outline: none;
+    border-color: #9ca3af;
+    box-shadow: 0 0 0 4px rgba(156,163,175,.2);
+  }
+  
+  /* ボタン（黒・横幅広め） */
+  .btn{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
+  }
+  .btn:disabled{ opacity: .6; cursor: not-allowed; }
+  .btn--primary{
+    background: var(--primary);
+    color: var(--white);
+    width: 100%;                 /* スクショの幅に合わせて全幅 */
+  }
+  .btn--primary:hover{ transform: translateY(-1px); }
+  
+  /* テキストリンク（ログインはこちら等） */
+  .text-link{
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #2563eb;
+    text-decoration: none;
+  }
+  .text-link:hover{ text-decoration: underline; }
+  
+  /* テーブル（勤怠一覧の質感） */
+  .table{
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .table thead th{
+    background: #f7f7f9;
+    color: #374151;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 12px 14px;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid #eef0f3;
+  }
+  .table tbody td{
+    font-size: 13px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #eef0f3;
+    white-space: nowrap;
+  }
+  .table tbody tr:last-child td{ border-bottom: none; }
+  
