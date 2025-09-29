@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail; // ★ 追加
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail // ★ implements を追加
 {
     use HasFactory, Notifiable;
 
@@ -14,7 +15,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
+        'role', // 'admin' or 'user' を想定
     ];
 
     protected $hidden = [
@@ -32,13 +33,13 @@ class User extends Authenticatable
         return $this->hasMany(AttendanceDay::class);
     }
 
-    // 自分が出した修正申請
+    // 自分が出した修正申請（FK: requested_by）
     public function correctionRequests()
     {
         return $this->hasMany(CorrectionRequest::class, 'requested_by');
     }
 
-    // 管理者として操作したログ
+    // 管理者として操作したログ（FK: admin_id）
     public function correctionLogs()
     {
         return $this->hasMany(CorrectionLog::class, 'admin_id');
