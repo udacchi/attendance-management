@@ -4,9 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;   // ★ 追加
 use App\Models\CorrectionRequest;
 
-class StampCorrectionRequestController extends Controller
+class StampCorrectionRequestController extends Controller  // ★ クラス名修正
 {
     public function __construct()
     {
@@ -15,15 +16,13 @@ class StampCorrectionRequestController extends Controller
 
     /**
      * 申請一覧（一般ユーザー=自分の申請のみ / 管理者=全件）
-     * GET /stamp-correction-requests  name: stamp_correction_request.index
-     * view: resources/views/stamp_correction_request/list.blade.php
      */
     public function index(Request $request)
     {
-        $isAdmin = (bool)(Auth::user()->is_admin ?? false);
+        $isAdmin = Gate::allows('admin');  // ★ ここで判定（isAdmin() を呼ばない）
 
         $requests = CorrectionRequest::query()
-            ->when(!$isAdmin, fn($q) => $q->where('user_id', Auth::id()))
+            ->when(!$isAdmin, fn($q) => $q->where('requested_by', Auth::id())) // ★ requested_by を使用
             ->latest('id')
             ->paginate(10);
 
