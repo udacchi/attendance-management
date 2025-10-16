@@ -85,13 +85,13 @@
       </table>
     </div>
 
-    {{-- フッター操作：承認待ちでない場合のみ表示 --}}
+    {{-- 承認待ちでない場合のみ表示 --}}
     @if(!$isPending)
       <div class="detail-actions">
-        <a
-          href="{{ route('attendance.edit', ['date' => $date->toDateString()]) }}"
-          class="btn-primary"
-        >修正</a>
+        <form method="POST" action="{{ route('attendance.request', ['date' => $date->toDateString()]) }}">
+          @csrf
+          <button type="submit" class="btn-primary">修正</button>
+        </form>
       </div>
     @else
       <p class="pending-note">※承認待ちのため修正はできません。</p>
