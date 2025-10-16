@@ -1,94 +1,94 @@
-/* ---- Page base ---- */
+/* 基本トークン */
 :root{
-  --page-bg:#1f1f1f;
-  --panel-bg:#ffffff;
-  --text:#111;
-  --muted:#666;
-  --border:#cfcfcf;
-  --shadow:0 10px 26px rgba(0,0,0,.35);
-  --black:#000;
-  --white:#fff;
+  --text: #111;
+  --muted: #666;
+  --border: #cfcfcf;
+  --black: #000;
+  --white: #fff;
+  --form-width: 680px;
 }
 
-html,body{height:100%;}
-body{background:var(--page-bg);}
+/* ページ全体を白、余白だけ確保 */
+html,body{ height: 100%; }
+html,body{
+  margin: 0; padding: 0;
+  font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","BIZ UDPGothic",Meiryo,sans-serif;
+  background: #fff; color: var(--text);
+}
 
-/* ---- Layout ---- */
+/* コンテナ（パネル感は出さない） */
 .admin-login{
-  padding: 32px 16px 64px;
+  padding: 72px 16px 120px;
 }
-
 .admin-login__panel{
-  background:var(--panel-bg);
-  width:min(960px, 100%);
-  margin:24px auto 0;
-  padding:72px 32px 88px;
-  box-shadow:var(--shadow);
+  width: min(860px,100%);
+  margin: 0 auto;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
 }
 
+/* タイトル */
 .admin-login__title{
-  margin:0 0 40px;
-  font-size:28px;
-  line-height:1.3;
-  font-weight:700;
-  text-align:center;
-  color:var(--text);
+  margin: 56px 0 28px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text);
 }
 
-/* ---- Form ---- */
+/* フォーム：入力行幅＝ボタン幅 */
 .admin-login__form{
-  width:min(720px, 100%);
-  margin:0 auto;
+  width: min(var(--form-width),100%);
+  margin: 0 auto;
 }
 
-.form-group{ margin-top:28px; }
-.form-group:first-of-type{ margin-top:0; }
+.form-group{ margin-top: 24px; }
+.form-group:first-of-type{ margin-top: 0; }
 
 .form-label{
-  display:block;
-  font-size:16px;
-  font-weight:600;
-  color:var(--text);
-  margin-bottom:10px;
+  display: block;
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .form-input{
-  display:block;
-  width:100%;
-  height:48px;
-  padding:12px 14px;
-  font-size:16px;
-  border:1px solid var(--border);
-  border-radius:4px;
-  outline:0;
-  background:#fff;
+  display: block;
+  width: 100%;
+  height: 56px;
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--white);
+  outline: 0;
 }
-
 .form-input:focus{
-  border-color:#999;
-  box-shadow:0 0 0 3px rgba(0,0,0,.06);
+  border-color: #999;
+  box-shadow: 0 0 0 3px rgba(0,0,0,.06);
 }
 
 .form-error{
-  margin-top:8px;
-  font-size:14px;
-  color:#c62828; /* 目立ちすぎない赤 */
+  margin-top: 8px;
+  font-size: 14px;
+  color: #c62828;
 }
 
-/* ---- Button ---- */
+/* ボタン（フォーム幅いっぱい） */
 .admin-login__button{
-  display:block;
-  width:min(520px, 100%);
-  height:52px;
-  margin:36px auto 0;
-  border:none;
-  border-radius:6px;
-  background:var(--black);
-  color:var(--white);
-  font-size:16px;
-  font-weight:700;
-  cursor:pointer;
-  transition:opacity .15s ease;
+  display: block;
+  width: 100%;
+  height: 54px;
+  margin: 28px auto 0;
+  border: none;
+  border-radius: 6px;
+  background: var(--black);
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
 }
-
-.admin-login__button:hover{ opacity:.9; }
+.admin-login__button:hover{ opacity: .9; }
