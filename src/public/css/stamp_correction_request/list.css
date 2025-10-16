@@ -1,5 +1,4 @@
 :root{
-  --page-bg:#1f1f1f;
   --canvas:#efeff3;
   --panel:#fff;
   --text:#1a1a1a;
@@ -7,10 +6,9 @@
   --border:#e6e6eb;
   --border-strong:#dcdce2;
   --chip:#f4f4f7;
-  --shadow:0 10px 26px rgba(0,0,0,.30);
 }
 
-body{ background:var(--page-bg); }
+body { background: var(--canvas); }
 
 /* キャンバス */
 .scr-list{ padding:32px 16px 64px; }
