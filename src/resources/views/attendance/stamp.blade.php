@@ -6,9 +6,53 @@
 <link rel="stylesheet" href="{{ asset('css/attendance/stamp.css') }}">
 @endsection
 
+@if ($state === 'after')
+  @section('user_nav')
+    <nav class="global-nav" aria-label="主ナビゲーション">
+      <ul class="global-nav__list">
+        {{-- 今月の出勤一覧（当月の範囲を付けて一覧へ） --}}
+        <li>
+          <a class="global-nav__link"
+             href="{{ route('attendance.list', [
+                    'from' => \Carbon\Carbon::now()->startOfMonth()->toDateString(),
+                    'to'   => \Carbon\Carbon::now()->endOfMonth()->toDateString(),
+                  ]) }}">
+            今月の出勤一覧
+          </a>
+        </li>
+
+        {{-- 申請一覧：ルート名はプロジェクトに合わせて変更してください --}}
+        <li>
+          <a class="global-nav__link"
+             href="{{ route('stamp_correction_request.list') }}">
+            申請一覧
+          </a>
+        </li>
+
+        {{-- ログアウト --}}
+        <li>
+          <form action="{{ route('logout') }}" method="POST">
+            @csrf
+            <button type="submit" class="global-nav__link global-nav__logout">ログアウト</button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+  @endsection
+@endif
+
 @section('content')
 <div class="attend-page">
   <div class="attend-hero">
+
+    {{-- フラッシュメッセージ --}}
+    @if (session('status'))
+      <div class="flash flash--success">{{ session('status') }}</div>
+    @endif
+    @if (session('error'))
+      <div class="flash flash--error">{{ session('error') }}</div>
+    @endif
+
     {{-- ステータスバッジ --}}
     @php
       /** $state: before|working|break|after */
@@ -19,7 +63,6 @@
         'after'   => ['退勤済',   'muted'],
       ][$state] ?? ['勤務外', 'muted'];
     @endphp
-
     <div class="attend-badge attend-badge--{{ $badge[1] }}">{{ $badge[0] }}</div>
 
     {{-- 日付 --}}
@@ -30,36 +73,24 @@
     {{-- 時刻 --}}
     <p class="attend-time" id="attendTime">{{ $displayTime }}</p>
 
-    {{-- アクション（状態で出し分け） --}}
+    {{-- 送信用の単一フォーム（外部フォームの影響を受けない） --}}
+    <form id="punchForm" method="POST" action="{{ route('attendance.punch') }}">
+      @csrf
+      <input type="hidden" name="action" id="punchAction">
+    </form>
+    
     <div class="attend-actions">
       @if ($state === 'before')
-        <form class="attend-form" action="{{ route('attendance.stamp') }}" method="POST">
-          @csrf
-          <input type="hidden" name="action" value="clock_in">
-          <button type="submit" class="btn btn--primary">出勤</button>
-        </form>
-
+        <button type="submit" form="punchForm" class="btn btn--primary" data-action="clock-in">出勤</button>
+    
       @elseif ($state === 'working')
-        <form class="attend-form" action="{{ route('attendance.stamp') }}" method="POST">
-          @csrf
-          <input type="hidden" name="action" value="clock_out">
-          <button type="submit" class="btn btn--primary">退勤</button>
-        </form>
-
-        <form class="attend-form" action="{{ route('attendance.stamp') }}" method="POST">
-          @csrf
-          <input type="hidden" name="action" value="break_in">
-          <button type="submit" class="btn btn--ghost">休憩入</button>
-        </form>
-
+        <button type="submit" form="punchForm" class="btn btn--primary" data-action="clock-out">退勤</button>
+        <button type="submit" form="punchForm" class="btn btn--ghost"   data-action="break-start">休憩入り</button>
+    
       @elseif ($state === 'break')
-        <form class="attend-form" action="{{ route('attendance.stamp') }}" method="POST">
-          @csrf
-          <input type="hidden" name="action" value="break_out">
-          <button type="submit" class="btn btn--ghost">休憩戻</button>
-        </form>
-
-      @elseif ($state === 'after')
+        <button type="submit" form="punchForm" class="btn btn--ghost"   data-action="break-end">休憩戻り</button>
+    
+      @else
         <p class="attend-message">お疲れ様でした。</p>
       @endif
     </div>
@@ -68,22 +99,11 @@
 
 {{-- 時刻のライブ更新（分解像度、秒は非表示） --}}
 <script>
-  (function(){
-    const el = document.getElementById('attendTime');
-    if(!el) return;
-    function pad(n){ return (n<10?'0':'')+n; }
-    function tick(){
-      const now = new Date();
-      el.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
-    }
-    tick();
-    setInterval(tick, 10*1000); // 10秒ごとに分を追従
-    // 二重送信防止
-    document.querySelectorAll('.attend-form').forEach(f=>{
-      f.addEventListener('submit', e=>{
-        const btn = f.querySelector('button[type="submit"]');
-        if(btn){ btn.disabled = true; btn.classList.add('is-loading'); }
-      });
+  (()=>{
+    const form = document.getElementById('punchForm');
+    const inp  = document.getElementById('punchAction');
+    document.querySelectorAll('button[form="punchForm"][data-action]').forEach(b=>{
+      b.addEventListener('click', ()=>{ inp.value = b.dataset.action; });
     });
   })();
 </script>
