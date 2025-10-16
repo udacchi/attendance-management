@@ -75,12 +75,12 @@
                    href="{{ route('attendance.stamp') }}">勤怠</a>
               </li>
               <li>
-                <a class="global-nav__link {{ request()->routeIs('attendance.index*') ? 'is-active' : '' }}"
-                   href="{{ route('attendance.index') }}">勤怠一覧</a>
+                <a class="global-nav__link {{ request()->routeIs('attendance.list*') ? 'is-active' : '' }}"
+                   href="{{ route('attendance.list') }}">勤怠一覧</a>
               </li>
               <li>
-                <a class="global-nav__link {{ request()->routeIs('requests.*') ? 'is-active' : '' }}"
-                   href="{{ route('requests.index') }}">申請</a>
+                <a class="global-nav__link {{ request()->routeIs('stamp_correction_request.list') ? 'is-active' : '' }}"
+                   href="{{ route('stamp_correction_request.list') }}">申請</a>
               </li>
               <li>
                 <form action="{{ route('logout') }}" method="POST">
