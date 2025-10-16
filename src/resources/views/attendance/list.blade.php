@@ -74,7 +74,7 @@
               <td class="cell--time">{{ $d['work_total'] ?? '-' }}</td>
               <td class="cell--link">
                 <a class="detail-link"
-                   href="{{ route('attendance.show', ['date' => $dCarbon->toDateString()]) }}">
+                   href="{{ route('attendance.detail', ['date' => $dCarbon->toDateString()]) }}">
                   詳細
                 </a>
               </td>
