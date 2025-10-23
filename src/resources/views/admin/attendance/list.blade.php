@@ -9,8 +9,7 @@
 @section('content')
 @php
   /** @var \Carbon\Carbon $date */
-  // コントローラから $date(Carbon), $records(配列/コレクション) を受け取る想定
-  // $records の各要素: ['user_id'=>1,'name'=>'山田 太郎','clock_in'=>'09:00','clock_out'=>'18:00','break_total'=>'1:00','work_total'=>'8:00']
+  // Controller: $date(Carbon), $records(collection/array)
   $prevDate = $date->copy()->subDay();
   $nextDate = $date->copy()->addDay();
 @endphp
@@ -22,23 +21,42 @@
       {{ $date->isoFormat('YYYY年M月D日') }}の勤怠
     </h1>
 
-    <!-- 日付ナビ -->
-    <div class="date-nav">
+    {{-- 日付ナビ（前日 / カレンダー / 翌日） --}}
+    <div class="date-nav" role="group" aria-label="日付ナビゲーション">
+      {{-- 前日 --}}
       <a class="date-nav__btn" href="{{ route('admin.attendance.list', ['date' => $prevDate->toDateString()]) }}">
-        <span class="date-nav__arrow">&#8592;</span> 前日
+        <span class="date-nav__arrow">←</span> 前日
       </a>
 
-      <form class="date-nav__center" action="{{ route('admin.attendance.list') }}" method="get">
-        <i class="date-nav__icon fa-regular fa-calendar"></i>
-        <input class="date-nav__input" type="date" name="date" value="{{ $date->toDateString() }}" onchange="this.form.submit()">
+      {{-- 中央：単日・月ジャンプ --}}
+      <form class="date-nav__center" action="{{ route('admin.attendance.list') }}" method="get" id="dateNavForm">
+        <i class="date-nav__icon fa-regular fa-calendar" aria-hidden="true"></i>
+
+        {{-- 単日ジャンプ --}}
+        <input class="date-nav__input" type="date" name="date"
+               value="{{ $date->toDateString() }}"
+               aria-label="日付を選択" onchange="this.form.submit()">
+
+        {{-- 月ジャンプ（選択時は1日に変換して送信） --}}
+        <input class="date-nav__input" type="month" name="month"
+               value="{{ old('month', $date->format('Y-m')) }}"
+               aria-label="月を選択"
+               onchange="
+                 const hidden = document.getElementById('dateNavMonthToDate');
+                 hidden.value = this.value + '-01';
+                 document.getElementById('dateNavForm').submit();
+               ">
+        <input type="hidden" id="dateNavMonthToDate" name="date" value="">
       </form>
 
-      <a class="date-nav__btn date-nav__btn--right" href="{{ route('admin.attendance.list', ['date' => $nextDate->toDateString()]) }}">
-        翌日 <span class="date-nav__arrow">&#8594;</span>
+      {{-- 翌日 --}}
+      <a class="date-nav__btn date-nav__btn--right"
+         href="{{ route('admin.attendance.list', ['date' => $nextDate->toDateString()]) }}">
+        翌日 <span class="date-nav__arrow">→</span>
       </a>
     </div>
 
-    <!-- 勤怠テーブル -->
+    {{-- テーブル --}}
     <div class="attendance-table__wrap">
       <table class="attendance-table">
         <thead>
@@ -60,7 +78,7 @@
               <td class="cell--time">{{ $row['break_total'] ?? '-' }}</td>
               <td class="cell--time">{{ $row['work_total'] ?? '-' }}</td>
               <td class="cell--link">
-                <a href="{{ route('admin.attendance.show', ['user' => $row['user_id'], 'date' => $date->toDateString()]) }}" class="detail-link">詳細</a>
+                <a href="{{ route('admin.attendance.detail', ['attendanceDay' => $row['id']]) }}" class="detail-link">詳細</a>
               </td>
             </tr>
           @empty
