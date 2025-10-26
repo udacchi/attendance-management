@@ -65,7 +65,7 @@ class AttendanceController extends Controller
         $action = $validated['action'];
 
         $tz  = config('app.timezone', 'Asia/Tokyo');
-        $now = Carbon::now($tz);
+        $now = Carbon::now($tz)->second(0);
 
         // きょうの勤怠（なければ作成）
         $day = AttendanceDay::with('breaks')->firstOrCreate(
@@ -135,10 +135,10 @@ class AttendanceController extends Controller
     /** 勤怠一覧（?month=YYYY-MM） */
     public function list(Request $request)
     {
-        $user = Auth::guard('web')->user();     // ← webガードを明示
+        $user = Auth::guard('web')->user(); // 一般ユーザー
         if (!$user) abort(401);
 
-        $tz    = config('app.timezone', 'Asia/Tokyo');
+        $tz = config('app.timezone', 'Asia/Tokyo');
         $month = $request->query('month')
             ? Carbon::createFromFormat('Y-m', $request->query('month'), $tz)->startOfMonth()
             : Carbon::now($tz)->startOfMonth();
@@ -146,7 +146,7 @@ class AttendanceController extends Controller
         $from = $month->copy()->startOfMonth();
         $to   = $month->copy()->endOfMonth();
 
-        // 全日初期化（- を出すため）
+        // 全日初期化（「-」表示用）
         $days = [];
         for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
             $key = $d->toDateString();
@@ -159,7 +159,7 @@ class AttendanceController extends Controller
             ];
         }
 
-        // 当月分を取得（休憩は total_break_minutes 優先、無ければ break_periods から合算）
+        // 当月分を取得（休憩計算用に breaks を eager load）
         $rows = AttendanceDay::with('breaks')
             ->where('user_id', $user->id)
             ->whereBetween('work_date', [$from->toDateString(), $to->toDateString()])
@@ -170,34 +170,46 @@ class AttendanceController extends Controller
             $key = $r->work_date->toDateString();
             if (!isset($days[$key])) continue;
 
-            $cin  = $r->clock_in_at ? Carbon::parse($r->clock_in_at)->tz($tz) : null;
-            $cout = $r->clock_out_at ? Carbon::parse($r->clock_out_at)->tz($tz) : null;
+            // 出勤・退勤（Asia/Tokyo で取得）
+            $cin  = $r->clock_in_at  ? Carbon::parse($r->clock_in_at)->timezone($tz)  : null;
+            $cout = $r->clock_out_at ? Carbon::parse($r->clock_out_at)->timezone($tz) : null;
+            
+            // 休憩合計（分）— 秒は完全無視（分に切り捨て）
+            $breakMin = 0;
+            $breaks = $r->relationLoaded('breaks') ? $r->breaks : $r->breaks()->get();
+            foreach ($breaks as $bp) {
+                $start = $bp->started_at ?? $bp->start_time ?? $bp->start_at ?? $bp->begin_at ?? null;
+                $end   = $bp->ended_at   ?? $bp->end_time   ?? $bp->end_at   ?? $bp->finish_at ?? null;
+                if ($start && $end) {
+                    $s = Carbon::parse($start)->timezone($tz);
+                    $e = Carbon::parse($end)->timezone($tz);
 
-            // 休憩分（分）
-            $breakMin = (int)($r->total_break_minutes ?? 0);
-            if ($breakMin === 0 && $r->relationLoaded('breaks')) {
-                foreach ($r->breaks as $bp) {
-                    if ($bp->started_at && $bp->ended_at) {
-                        $breakMin += Carbon::parse($bp->ended_at)->diffInMinutes(Carbon::parse($bp->started_at));
-                    }
+                    // 秒を無視して “分だけ” の差分（マイナスは0）
+                    $sMin = $s->hour * 60 + $s->minute;
+                    $eMin = $e->hour * 60 + $e->minute;
+                    if ($eMin < $sMin) $eMin += 24 * 60; // 日跨ぎ対応
+                    $diff = $eMin - $sMin;
+                    if ($diff > 0) $breakMin += $diff;
                 }
             }
-            $breakStr = $breakMin ? sprintf('%d:%02d', intdiv($breakMin, 60), $breakMin % 60) : null;
 
-            // 実働
-            $workStr = null;
+            // 実働（分）＝(退勤−出勤)−休憩（いずれか欠けてたら null）
+            $workedMin = null;
             if ($cin && $cout) {
-                $worked = $cout->diffInMinutes($cin, false) - $breakMin;
-                if ($worked < 0) $worked = 0;
-                $workStr = sprintf('%02d:%02d', intdiv($worked, 60), $worked % 60);
+                $cinMin  = $cin->hour  * 60 + $cin->minute;
+                $coutMin = $cout->hour * 60 + $cout->minute;
+                if ($coutMin < $cinMin) $coutMin += 24 * 60; // 日跨ぎ対応
+                $gross = max(0, $coutMin - $cinMin);
+                $workedMin = max(0, $gross - $breakMin);
             }
 
+            // 画面表示用（0分のときも "00:00" を出す＝消えない）
             $days[$key] = [
                 'date'        => $key,
                 'clock_in'    => $cin  ? $cin->format('H:i')  : null,
                 'clock_out'   => $cout ? $cout->format('H:i') : null,
-                'break_total' => $breakStr,
-                'work_total'  => $workStr,
+                'break_total' => sprintf('%02d:%02d', intdiv($breakMin, 60), $breakMin % 60),
+                'work_total'  => is_null($workedMin) ? null : sprintf('%02d:%02d', intdiv($workedMin, 60), $workedMin % 60),
             ];
         }
 
@@ -206,6 +218,7 @@ class AttendanceController extends Controller
             'days'  => array_values($days),
         ]);
     }
+
 
     /** 勤怠詳細（/attendance/{date}） */
     public function detail(string $date)
