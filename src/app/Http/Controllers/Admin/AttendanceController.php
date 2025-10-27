@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\AttendanceDay;
 use App\Models\User;
 use App\Models\CorrectionLog;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -274,14 +275,78 @@ class AttendanceController extends Controller
             ->with('status', '管理者による修正を反映しました。');
     }
 
-    public function staffAttendance(Request $request, User $user)
+    public function staff(Request $request, int $id)
     {
-        $attendances = AttendanceDay::query()
-            ->where('user_id', $user->id)
-            ->orderByDesc('work_date')->orderByDesc('id')
-            ->paginate(20)
-            ->withQueryString();
+        $tz    = config('app.timezone', 'Asia/Tokyo');
+        $month = $request->query('month')
+            ? Carbon::createFromFormat('Y-m', $request->query('month'), $tz)->startOfMonth()
+            : Carbon::now($tz)->startOfMonth();
 
-        return view('admin.staff.attendance.list', compact('user', 'attendances'));
+        $from = $month->copy()->startOfMonth();
+        $to   = $month->copy()->endOfMonth();
+
+        $user = User::findOrFail($id);
+
+        // 該当月の勤怠（必要に応じて with(...) で休憩なども）
+        $days = AttendanceDay::where('user_id', $id)
+            ->whereBetween('work_date', [$from->toDateString(), $to->toDateString()])
+            ->orderBy('work_date')
+            ->get();
+
+        return view('admin.attendance.staff', [
+            'user'  => $user,
+            'month' => $month,
+            'from'  => $from,
+            'to'    => $to,
+            'days'  => $days,
+        ]);
+    }
+
+    public function staffCsv(\Illuminate\Http\Request $request, int $id): StreamedResponse
+    {
+        $tz    = config('app.timezone', 'Asia/Tokyo');
+        $month = $request->query('month')
+            ? \Carbon\Carbon::createFromFormat('Y-m', $request->query('month'), $tz)->startOfMonth()
+            : \Carbon\Carbon::now($tz)->startOfMonth();
+
+        $from = $month->copy()->startOfMonth();
+        $to   = $month->copy()->endOfMonth();
+
+        $user = \App\Models\User::findOrFail($id);
+
+        // 月内の勤怠を取得（必要に応じて列名はあなたのスキーマに合わせて調整）
+        $days = \App\Models\AttendanceDay::where('user_id', $id)
+            ->whereBetween('work_date', [$from->toDateString(), $to->toDateString()])
+            ->orderBy('work_date')
+            ->get();
+
+        $filename = sprintf('attendance_%s_%s.csv', $user->id, $month->format('Y-m'));
+
+        return response()->streamDownload(function () use ($days) {
+            $out = fopen('php://output', 'w');
+            // ヘッダ行（UTF-8 / ExcelならS-JISに変換する場合は iconv を使用）
+            fputcsv($out, ['date', 'clock_in', 'clock_out', 'break_total', 'work_total']);
+
+            foreach ($days as $d) {
+                // あなたのカラム名に合わせて整形
+                $date        = $d->work_date;
+                $clockIn     = optional($d->clock_in_at)->format('H:i');
+                $clockOut    = optional($d->clock_out_at)->format('H:i');
+                $breakTotal  = $d->break_total_text ?? ''; // アクセサが無ければ自前で整形
+                $workTotal   = $d->work_total_text  ?? '';
+
+                fputcsv($out, [
+                    $date,
+                    $clockIn ?: '',
+                    $clockOut ?: '',
+                    $breakTotal,
+                    $workTotal,
+                ]);
+            }
+            fclose($out);
+        }, $filename, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 }

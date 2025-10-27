@@ -10,7 +10,7 @@
 @php
   /**
    * 受け取り想定
-   * $staff : App\Models\User（少なくとも ->id, ->name）
+   * $user : App\Models\User（少なくとも ->id, ->name）
    * $month : \Carbon\Carbon （対象月の1日を指す想定）
    * $days  : [
    *   ['date'=>'2023-06-01','clock_in'=>'09:00','clock_out'=>'18:00','break_total'=>'1:00','work_total'=>'8:00'],
@@ -24,15 +24,15 @@
 <div class="admin-staff-attendance">
   <div class="admin-staff-attendance__inner">
 
-    <h1 class="page-title">{{ $staff->name }}さんの勤怠</h1>
+    <h1 class="page-title">{{ $user->name }}さんの勤怠</h1>
 
     <!-- 月ナビ -->
     <div class="month-nav">
-      <a class="month-nav__btn" href="{{ route('admin.attendance.staff', ['user' => $staff->id, 'month' => $prevMonth->format('Y-m')]) }}">
+      <a class="month-nav__btn" href="{{ route('admin.attendance.staff', ['id' => $user->id, 'month' => $prevMonth->format('Y-m')]) }}">
         <span class="month-nav__arrow">&#8592;</span> 前月
       </a>
 
-      <form class="month-nav__center" action="{{ route('admin.attendance.staff', ['user' => $staff->id]) }}" method="get">
+      <form class="month-nav__center" action="{{ route('admin.attendance.staff', ['id' => $user->id]) }}" method="get">
         <i class="month-nav__icon fa-regular fa-calendar"></i>
         <input
           class="month-nav__input"
@@ -43,7 +43,7 @@
         >
       </form>
 
-      <a class="month-nav__btn month-nav__btn--right" href="{{ route('admin.attendance.staff', ['user' => $staff->id, 'month' => $nextMonth->format('Y-m')]) }}">
+      <a class="month-nav__btn month-nav__btn--right" href="{{ route('admin.attendance.staff', ['id' => $user->id, 'month' => $nextMonth->format('Y-m')]) }}">
         翌月 <span class="month-nav__arrow">&#8594;</span>
       </a>
     </div>
@@ -72,7 +72,7 @@
               <td class="cell--time">{{ $d['work_total'] ?? '-' }}</td>
               <td class="cell--link">
                 <a class="detail-link"
-                   href="{{ route('admin.attendance.show', ['user' => $staff->id, 'date' => $dCarbon->toDateString()]) }}">
+                   href="{{ route('admin.attendance.detail', ['id' => $user->id, 'date' => $dCarbon->toDateString()]) }}">
                   詳細
                 </a>
               </td>
@@ -89,7 +89,7 @@
     <!-- CSV出力 -->
     <div class="page-actions">
       <a class="btn-primary"
-         href="{{ route('admin.attendance.staff.csv', ['user' => $staff->id, 'month' => $month->format('Y-m')]) }}">
+         href="{{ route('admin.attendance.staff.csv', ['id' => $user->id, 'month' => $month->format('Y-m')]) }}">
         CSV出力
       </a>
     </div>
