@@ -10,6 +10,7 @@ use App\Http\Controllers\StampCorrectionRequestController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
 use App\Http\Controllers\Admin\StampCorrectionApprovalController as AdminStampCorrectionApprovalController;
 use App\Http\Controllers\Admin\LoginController as AdminLoginController;
+use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 
 /*
 |--------------------------------------------------------------------------
@@ -104,18 +105,22 @@ Route::post('/admin/logout', [AdminLoginController::class, 'destroy'])
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])->group(function () {
-    // 全社員の勤怠一覧
+    // 勤怠一覧
     Route::get('/attendance/list', [AdminAttendanceController::class, 'index'])->name('attendance.list');
 
     // 勤怠詳細
-    Route::get('/attendance/{attendanceDay}', [AdminAttendanceController::class, 'show'])->name('attendance.detail');
+    Route::get('/attendance/{id}', [AdminAttendanceController::class, 'show'])->whereNumber('id')
+        ->name('attendance.detail');
+
+    // スタッフ一覧
+    Route::get('/staff/list', [AdminStaffController::class, 'index'])->name('staff.list');
 
     // スタッフ別勤怠一覧
-    Route::get('/staff/{user}/attendance/list', [AdminAttendanceController::class, 'staffAttendance'])
-        ->name('staff.attendance.list');
+    Route::get('/attendance/staff/{id}', [AdminAttendanceController::class, 'staff'])
+        ->whereNumber('id')->name('attendance.staff');
 
-    // 修正申請 承認一覧（管理側）
-    Route::get('/stamp_correction_request/list', [AdminStampCorrectionApprovalController::class, 'index'])
+    // 修正申請 承認（管理側）
+    Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [AdminStampCorrectionApprovalController::class, 'index'])
         ->name('corrections.list');
 
     // 修正申請 詳細（管理側）
@@ -129,6 +134,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
     // ユーザーに反映
     Route::put('/attendance/{user}', [AdminAttendanceController::class, 'updateByUserDate'])
         ->name('attendance.update');
+
+    
 });
 
 /*

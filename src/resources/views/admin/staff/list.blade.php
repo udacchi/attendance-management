@@ -43,17 +43,15 @@
             <tr>
               <td class="cell--name">
                 <a
-                  href="{{ route('admin.attendance.staff', ['user' => $id, 'month' => $month->format('Y-m')]) }}"
-                  class="name-link"
-                  aria-label="{{ $name }}さんの勤怠一覧へ"
-                >
+                  href="{{ route('admin.attendance.staff', ['id' => $id, 'month' => $month->format('Y-m')]) }}"
+                  class="name-link" aria-label="{{ $name }}さんの勤怠一覧へ">
                   {{ $name }}
                 </a>
               </td>
               <td class="cell--email">{{ $email }}</td>
               <td class="cell--link">
                 <a class="detail-link"
-                   href="{{ route('admin.attendance.staff', ['user' => $id, 'month' => $month->format('Y-m')]) }}">
+                   href="{{ route('admin.attendance.staff', ['id' => $id, 'month' => $month->format('Y-m')]) }}">
                   詳細
                 </a>
               </td>

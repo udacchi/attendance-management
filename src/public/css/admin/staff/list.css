@@ -1,16 +1,14 @@
 :root{
-  --page-bg:#1f1f1f;
   --canvas:#efeff3;
   --panel:#fff;
   --text:#1a1a1a;
   --muted:#666;
   --border:#e6e6eb;
   --border-strong:#dcdce2;
-  --shadow:0 10px 26px rgba(0,0,0,.30);
   --radius:10px;
 }
 
-body{ background:var(--page-bg); }
+body{ background:var(--canvas); }
 
 /* キャンバス */
 .admin-staff-list{ padding:32px 16px 64px; }
@@ -54,13 +52,12 @@ body{ background:var(--page-bg); }
   box-shadow:0 1px 0 rgba(0,0,0,.02);
 }
 .staff-table thead th{
-  background:#f7f7fa;
   color:#333;
   text-align:left;
   font-weight:700;
   font-size:14px;
   padding:14px 18px;
-  border-bottom:1px solid var(--border-strong);
+  border-bottom:2px solid var(--border-strong);
 }
 .staff-table tbody td{
   padding:14px 18px;
