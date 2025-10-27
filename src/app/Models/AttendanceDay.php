@@ -33,7 +33,7 @@ class AttendanceDay extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function breaks()
+    public function breakPeriods()
     {
         return $this->hasMany(BreakPeriod::class, 'attendance_day_id');
     }

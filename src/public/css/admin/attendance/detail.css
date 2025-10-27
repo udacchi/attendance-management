@@ -1,18 +1,15 @@
 :root{
-  --page-bg:#1f1f1f;
   --canvas:#efeff3;
-  --panel:#ffffff;
+  --panel:#fff;
   --text:#101010;
-  --muted:#666;
   --border:#e8e8ee;
   --border-strong:#e0e0e6;
-  --shadow:0 10px 26px rgba(0,0,0,.30);
   --radius:10px;
   --black:#000;
   --white:#fff;
 }
 
-body{ background:var(--page-bg); }
+body{ background:var(--canvas); }
 
 /* 外枠キャンバス */
 .admin-attendance-detail{
@@ -72,7 +69,6 @@ body{ background:var(--page-bg); }
 .detail-table th{
   width:26%;
   text-align:left;
-  background:#f7f7fa;
   font-weight:700;
   color:#333;
 }

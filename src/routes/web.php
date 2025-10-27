@@ -121,6 +121,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
     // 修正申請 詳細（管理側）
     Route::get('/stamp_correction_request/{correctionRequest}', [AdminStampCorrectionApprovalController::class, 'show'])
         ->name('corrections.show');
+
+    // 修正編集（管理者）
+    Route::get('/attendance/{user}/edit', [AdminAttendanceController::class, 'editByUserDate'])
+        ->name('attendance.edit');
+
+    // ユーザーに反映
+    Route::put('/attendance/{user}', [AdminAttendanceController::class, 'updateByUserDate'])
+        ->name('attendance.update');
 });
 
 /*
