@@ -1,6 +1,6 @@
 :root{
-  --canvas:#efeff3;        /* 背景グレー */
-  --panel:#fff;            /* テーブル白 */
+  --canvas:#efeff3;        
+  --panel:#fff;            
   --text:#1a1a1a;
   --muted:#666;
   --border:#e5e5e9;

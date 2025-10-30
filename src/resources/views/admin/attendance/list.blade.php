@@ -78,7 +78,10 @@
               <td class="cell--time">{{ $row['break_total'] ?? '-' }}</td>
               <td class="cell--time">{{ $row['work_total'] ?? '-' }}</td>
               <td class="cell--link">
-                <a href="{{ route('admin.attendance.detail', ['attendanceDay' => $row['id']]) }}" class="detail-link">詳細</a>
+                <a href="{{ route('admin.attendance.detail', [
+                    'id'   => $row['user_id'],          // ユーザーID
+                    'date' => $date->toDateString(),    // その日の date（一覧の日付変数）
+                ]) }}" class="detail-link">詳細</a>
               </td>
             </tr>
           @empty

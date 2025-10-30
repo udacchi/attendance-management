@@ -306,8 +306,8 @@ class AttendanceController extends Controller
     {
         $tz    = config('app.timezone', 'Asia/Tokyo');
         $month = $request->query('month')
-            ? \Carbon\Carbon::createFromFormat('Y-m', $request->query('month'), $tz)->startOfMonth()
-            : \Carbon\Carbon::now($tz)->startOfMonth();
+            ? Carbon::createFromFormat('Y-m', $request->query('month'), $tz)->startOfMonth()
+            : Carbon::now($tz)->startOfMonth();
 
         $from = $month->copy()->startOfMonth();
         $to   = $month->copy()->endOfMonth();
@@ -315,7 +315,7 @@ class AttendanceController extends Controller
         $user = \App\Models\User::findOrFail($id);
 
         // 月内の勤怠を取得（必要に応じて列名はあなたのスキーマに合わせて調整）
-        $days = \App\Models\AttendanceDay::where('user_id', $id)
+        $days = AttendanceDay::where('user_id', $id)
             ->whereBetween('work_date', [$from->toDateString(), $to->toDateString()])
             ->orderBy('work_date')
             ->get();

@@ -87,17 +87,16 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
 | 管理者ログイン（一般ユーザーとは分離）
 |--------------------------------------------------------------------------
 */
-Route::prefix('admin')->name('admin.')->middleware('guest:admin')->group(function () {
+Route::prefix('admin')->name('admin.')->group(function () {
     // 管理者ログイン画面（GET）
-    Route::get('/login', [AdminLoginController::class, 'show'])->name('login');
-    // 管理者ログイン送信（POST）
-    Route::post('/login', [AdminLoginController::class, 'store']);
-});
+    Route::get('/login', [AdminLoginController::class, 'show'])->name('login')->middleware('guest:admin');
 
-// 管理者ログアウト（POST）— admin ガードで保護
-Route::post('/admin/logout', [AdminLoginController::class, 'destroy'])
-    ->middleware('auth:admin')
-    ->name('admin.logout');
+    // 管理者ログイン送信（POST）
+    Route::post('/login', [AdminLoginController::class, 'store'])->name('login.store')->middleware('guest:admin');
+
+    // ★ ログアウト（POST）
+    Route::post('logout', [AdminLoginController::class, 'destroy'])->name('logout')->middleware('auth:admin');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -118,6 +117,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
     // スタッフ別勤怠一覧
     Route::get('/attendance/staff/{id}', [AdminAttendanceController::class, 'staff'])
         ->whereNumber('id')->name('attendance.staff');
+
+    // ★ CSV出力
+    Route::get('/attendance/staff/{id}/csv', [AdminAttendanceController::class, 'staffCsv'])
+        ->whereNumber('id')->name('attendance.staff.csv');
 
     // 修正申請 承認（管理側）
     Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [AdminStampCorrectionApprovalController::class, 'index'])
