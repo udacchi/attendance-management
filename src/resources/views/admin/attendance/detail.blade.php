@@ -83,7 +83,7 @@
     </div>
 
     <div class="detail-actions">
-      <a href="{{ route('admin.attendance.edit', ['user' => $record['user_id'], 'date' => $date->toDateString()]) }}" class="btn-primary">修正</a>
+      <a href="{{ route('admin.attendance.edit', ['user' => $user->id, 'date' => $date->toDateString()]) }}" class="btn-primary">修正</a>
     </div>
 
   </div>

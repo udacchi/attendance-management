@@ -96,56 +96,50 @@ class AttendanceController extends Controller
         ));
     }
 
-    public function show(AttendanceDay $attendanceDay)
+    public function show(AttendanceDay $attendanceDay, Request $request)
     {
-        $tz = config('app.timezone', 'Asia/Tokyo');
-        $attendanceDay->load(['user', 'breakPeriods']);
+        $date = $request->query('date') ?? $attendanceDay->work_date;
+        return redirect()->route('admin.attendance.detail', [
+            'id'   => $attendanceDay->user_id,
+            'date' => $date,
+        ]);
+    }
 
-        $date = $attendanceDay->work_date
-            ? Carbon::parse($attendanceDay->work_date, $tz)->startOfDay()
-            : Carbon::now($tz)->startOfDay();
+    public function detailByUserDate(int $id, Request $request)
+    {
+        $tz   = config('app.timezone', 'Asia/Tokyo');
+        $user = User::findOrFail($id);
 
-        // 休憩合計（秒）
-        $breakSeconds = 0;
-        foreach ($attendanceDay->breakPeriods ?? [] as $bp) {
-            $start = $bp->break_start_at ? Carbon::parse($bp->break_start_at, $tz) : null;
-            $end   = $bp->break_end_at   ? Carbon::parse($bp->break_end_at, $tz)   : null;
-            if ($start && $end && $end->greaterThan($start)) {
-                $breakSeconds += $end->diffInSeconds($start);
-            }
-        }
+        $date = $request->query('date')
+            ? \Carbon\Carbon::parse($request->query('date'), $tz)->startOfDay()
+            : \Carbon\Carbon::now($tz)->startOfDay();
 
-        $clockIn  = $attendanceDay->clock_in_at  ? Carbon::parse($attendanceDay->clock_in_at, $tz)  : null;
-        $clockOut = $attendanceDay->clock_out_at ? Carbon::parse($attendanceDay->clock_out_at, $tz) : null;
+        $attendanceDay = AttendanceDay::firstOrCreate(
+            ['user_id' => $user->id, 'work_date' => $date->toDateString()],
+            []
+        );
+        $attendanceDay->load(['breakPeriods']);
 
-        $workSeconds = 0;
-        if ($clockIn && $clockOut && $clockOut->greaterThan($clockIn)) {
-            $workSeconds = max(0, $clockOut->diffInSeconds($clockIn) - $breakSeconds);
-        }
-
-        $fmtHM = function (?int $seconds) {
-            if ($seconds === null) return '–';
-            $minutes = intdiv($seconds, 60); // 秒は切り捨て
-            $h = intdiv($minutes, 60);
-            $m = $minutes % 60;
-            return sprintf('%02d:%02d', $h, $m);
-        };
-
-        $record = [
-            'user_id'     => optional($attendanceDay->user)->id,
-            'name'        => optional($attendanceDay->user)->name ?? '-',
-            'date'        => $date->toDateString(),
-            'clock_in'    => $clockIn  ? $clockIn->format('H:i')  : '–',
-            'clock_out'   => $clockOut ? $clockOut->format('H:i') : '–',
-            'break_total' => $fmtHM($breakSeconds),
-            'work_total'  => $fmtHM($workSeconds),
-            'raw'         => $attendanceDay,
-        ];
+        // …表示用の $record を組み立て（省略可）
 
         return view('admin.attendance.detail', [
+            'user'   => $user,
             'date'   => $date,
-            'user'   => $attendanceDay->user,
-            'record' => $record,
+            'record' => [
+                'user_id'     => $user->id,
+                'name'        => $user->name, // ★これが必須！
+                'date'        => $date->toDateString(),
+                'clock_in'    => $attendanceDay->clock_in_at
+                    ? Carbon::parse($attendanceDay->clock_in_at)->format('H:i')
+                    : '–',
+                'clock_out'   => $attendanceDay->clock_out_at
+                    ? Carbon::parse($attendanceDay->clock_out_at)->format('H:i')
+                    : '–',
+                'break_total' => '–',
+                'work_total'  => '–',
+                'note'        => null,
+            ],
+            'attendanceDay' => $attendanceDay,
         ]);
     }
 
