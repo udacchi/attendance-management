@@ -53,9 +53,9 @@ class LoginController extends Controller
     // 管理者ログアウト（POST）
     public function destroy(Request $request)
     {
-        Auth::guard('admin')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect()->route('admin.login');
+        Auth::guard('admin')->logout();              // adminガードをログアウト
+        $request->session()->invalidate();           // セッション無効化
+        $request->session()->regenerateToken();      // CSRFトークン再生成
+        return redirect()->route('admin.login');     // ログインへ戻す
     }
 }
