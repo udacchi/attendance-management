@@ -108,7 +108,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
     Route::get('/attendance/list', [AdminAttendanceController::class, 'index'])->name('attendance.list');
 
     // 勤怠詳細
-    Route::get('/attendance/{id}', [AdminAttendanceController::class, 'show'])->whereNumber('id')
+    Route::get('/attendance/{id}', [AdminAttendanceController::class, 'detailByUserDate'])->whereNumber('id')
         ->name('attendance.detail');
 
     // スタッフ一覧
