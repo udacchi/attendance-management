@@ -36,7 +36,7 @@
           <ul class="admin-nav__list">
             <li><a href="{{ route('admin.attendance.list') }}" class="admin-nav__link">勤怠一覧</a></li>
             <li><a href="{{ route('admin.staff.list') }}"      class="admin-nav__link">スタッフ一覧</a></li>
-            <li><a href="{{ route('admin.corrections.list') }}" class="admin-nav__link">申請一覧</a></li>
+            <li><a href="{{ route('stamp_correction_request.list') }}" class="admin-nav__link">申請一覧</a></li>
             <li>
               <form action="{{ route('admin.logout') }}" method="POST" class="adminlogout-form">
                 @csrf

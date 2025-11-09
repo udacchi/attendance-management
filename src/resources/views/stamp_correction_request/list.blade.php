@@ -1,22 +1,11 @@
 @php
-  /**
-   * 受け取り想定:
-   * $isAdmin  : bool   管理者なら true（ミドルウェア等で注入）
-   * $status   : string 'pending' | 'approved'
-   * $requests : array|Collection （各要素）
-   *   [
-   *     'id'=>1,
-   *     'status'=>'pending', // or 'approved'
-   *     'user_name'=>'西 伶奈',
-   *     'target_at'=>'2023-06-01 09:00:00',
-   *     'reason'=>'遅延のため',
-   *     'requested_at'=>'2023-06-02 10:00:00',
-   *   ]
-   */
   $status  = $status ?? 'pending';
   $layout  = ($isAdmin ?? false) ? 'layouts.admin' : 'layouts.app';
-  $listRt  = ($isAdmin ?? false) ? 'admin.stamp_correction_request.list'  : 'stamp_correction_request.list';
-  $showRt  = ($isAdmin ?? false) ? 'admin.stamp_correction_request.show'  : 'stamp_correction_request.show';
+
+  // 一覧は共通ルート名に固定
+  $listRt  = 'stamp_correction_request.list';
+
+  $showRt  = ($isAdmin ?? false) ? 'admin.corrections.show' : 'stamp_correction_request.show';
 @endphp
 
 @extends($layout)
@@ -57,23 +46,31 @@
         <tbody>
           @forelse ($requests as $row)
             @php
-              $tgt = \Carbon\Carbon::parse($row['target_at'] ?? null);
-              $req = \Carbon\Carbon::parse($row['requested_at'] ?? null);
+              $tgt = $row->target_at ? \Carbon\Carbon::parse($row->target_at) : null;
+              $req = $row->requested_at ? \Carbon\Carbon::parse($row->requested_at) : null;
             @endphp
             <tr>
               <td class="cell--status">
-                {{ $row['status'] === 'approved' ? '承認済み' : '承認待ち' }}
+                {{ $row->status === 'approved' ? '承認済み' : '承認待ち' }}
               </td>
-              <td class="cell--name">{{ $row['user_name'] ?? '' }}</td>
+              <td class="cell--name">{{ $row->user_name ?? '' }}</td>
               <td class="cell--datetime">
                 {{ $tgt ? $tgt->isoFormat('YYYY/MM/DD') : '-' }}
               </td>
-              <td class="cell--reason">{{ $row['reason'] ?? '' }}</td>
+              <td class="cell--reason">{{ $row->reason ?? '' }}</td>
               <td class="cell--datetime">
                 {{ $req ? $req->isoFormat('YYYY/MM/DD') : '-' }}
               </td>
               <td class="cell--link">
-                <a class="detail-link" href="{{ route($showRt, ['request' => $row['id']]) }}">詳細</a>
+                @if(($isAdmin ?? false))
+              {{-- ★ ここが肝。param名は correctionRequest、値は $row->id（オブジェクトアクセス） --}}
+                  <a class="detail-link"
+                     href="{{ route('admin.corrections.show', ['correctionRequest' => $row->id]) }}">
+                    詳細
+                  </a>
+                @else
+                  詳細
+                @endif
               </td>
             </tr>
           @empty

@@ -4,31 +4,38 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;   // ★ 追加
+use Illuminate\Support\Facades\Gate;
 use App\Models\CorrectionRequest;
 use App\Models\AttendanceDay;
 use Carbon\Carbon;
 
 class StampCorrectionRequestController extends Controller  // ★ クラス名修正
 {
-    public function __construct()
-    {
-        $this->middleware(['auth', 'verified']);
-    }
-
     /**
      * 申請一覧（一般ユーザー=自分の申請のみ / 管理者=全件）
      */
     public function index(Request $request)
     {
-        $isAdmin = Gate::allows('admin');  // ★ ここで判定（isAdmin() を呼ばない）
+        $isAdmin = Auth::guard('admin')->check();
 
-        $requests = CorrectionRequest::query()
-            ->when(!$isAdmin, fn($q) => $q->where('requested_by', Auth::id())) // ★ requested_by を使用
-            ->latest('id')
-            ->paginate(10);
+        if ($isAdmin) {
+            // 管理者：全申請
+            $requests = CorrectionRequest::query()
+                ->latest()
+                ->paginate(20);
+        } else {
+            // 一般ユーザー：自分の申請のみ
+            $uid = Auth::id(); // web ガード
+            $requests = CorrectionRequest::query()
+                ->where('requested_by', $uid)   // カラム名はプロジェクトに合わせて
+                ->latest()
+                ->paginate(20);
+        }
 
-        return view('stamp_correction_request.list', compact('requests', 'isAdmin'));
+        return view('stamp_correction_request.list', [
+            'requests' => $requests,
+            'isAdmin'  => $isAdmin,
+        ]);
     }
 
     /**

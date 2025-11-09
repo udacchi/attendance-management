@@ -77,9 +77,6 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         ->where('date', '\d{4}-\d{2}-\d{2}')
         ->name('attendance.request');
 
-    // 申請一覧（ユーザー／管理者共通ビュー）
-    Route::get('/stamp_correction_request/list', [StampCorrectionRequestController::class, 'index'])
-        ->name('stamp_correction_request.list');
 });
 
 /*
@@ -138,8 +135,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
     Route::put('/attendance/{user}', [AdminAttendanceController::class, 'updateByUserDate'])
         ->name('attendance.update');
 
-    
 });
+
+/*
+|--------------------------------------------------------------------------
+| 共有ルート
+|--------------------------------------------------------------------------
+*/
+Route::get('/stamp_correction_request/list', [StampCorrectionRequestController::class, 'index'])
+    ->name('stamp_correction_request.list')
+    ->middleware('auth.any');
 
 /*
 |--------------------------------------------------------------------------
