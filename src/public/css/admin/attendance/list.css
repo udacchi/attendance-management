@@ -48,7 +48,7 @@ body{ background:var(--canvas); }
   border-radius:12px;
   padding:10px 14px;
   margin: 16px auto 28px;
-  width:min(760px, 100%);    /* 右スクショの幅感 */
+  width:min(760px, 100%);  
 }
 .date-nav__btn{
   display:inline-flex; align-items:center;

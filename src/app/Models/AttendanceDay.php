@@ -38,6 +38,11 @@ class AttendanceDay extends Model
         return $this->hasMany(BreakPeriod::class, 'attendance_day_id');
     }
 
+    public function breaks()
+    {
+        return $this->breakPeriods();
+    }
+
     public function correctionRequests()
     {
         return $this->hasMany(CorrectionRequest::class, 'attendance_day_id');

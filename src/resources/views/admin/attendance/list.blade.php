@@ -36,17 +36,6 @@
         <input class="date-nav__input" type="date" name="date"
                value="{{ $date->toDateString() }}"
                aria-label="日付を選択" onchange="this.form.submit()">
-
-        {{-- 月ジャンプ（選択時は1日に変換して送信） --}}
-        <input class="date-nav__input" type="month" name="month"
-               value="{{ old('month', $date->format('Y-m')) }}"
-               aria-label="月を選択"
-               onchange="
-                 const hidden = document.getElementById('dateNavMonthToDate');
-                 hidden.value = this.value + '-01';
-                 document.getElementById('dateNavForm').submit();
-               ">
-        <input type="hidden" id="dateNavMonthToDate" name="date" value="">
       </form>
 
       {{-- 翌日 --}}

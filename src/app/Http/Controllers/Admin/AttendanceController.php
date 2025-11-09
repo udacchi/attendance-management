@@ -356,16 +356,18 @@ class AttendanceController extends Controller
             }
         });
 
-
         // 戻り先に ?date= をきちんと付け直す（FN037 もれ防止）
         return redirect()
             ->to(route('admin.attendance.detail', ['id' => $user->id]) . '?date=' . $date->toDateString())
             ->with('status', '管理者による修正を反映しました。');
     }
 
-    public function staff(Request $request, int $id)
+    public function staff(Request $request, $id)
     {
-        $tz    = config('app.timezone', 'Asia/Tokyo');
+        $user = User::findOrFail($id);
+
+        $tz = config('app.timezone', 'Asia/Tokyo');
+
         $month = $request->query('month')
             ? Carbon::createFromFormat('Y-m', $request->query('month'), $tz)->startOfMonth()
             : Carbon::now($tz)->startOfMonth();
@@ -373,22 +375,55 @@ class AttendanceController extends Controller
         $from = $month->copy()->startOfMonth();
         $to   = $month->copy()->endOfMonth();
 
-        $user = User::findOrFail($id);
+        // 1) 空の一覧を作る
+        $days = [];
+        for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
+            $key = $d->toDateString();
+            $days[$key] = [
+                'date'        => $d->copy(),
+                'clock_in'    => null,
+                'clock_out'   => null,
+                'break_total' => 0,
+                'work_total'  => 0,
+            ];
+        }
 
-        // 該当月の勤怠（必要に応じて with(...) で休憩なども）
-        $days = AttendanceDay::where('user_id', $id)
-            ->whereBetween('work_date', [$from->toDateString(), $to->toDateString()])
+        // 2) 月内の実データを取得（★ work_date で絞る）
+        $records = \App\Models\AttendanceDay::query()
+            ->with('breakPeriods')
+            ->where('user_id', $user->id)
+            ->whereDate('work_date', '>=', $from->toDateString())
+            ->whereDate('work_date', '<=', $to->toDateString())
             ->orderBy('work_date')
             ->get();
 
+        // 3) 埋め戻し
+        foreach ($records as $ad) {
+            $key = $ad->work_date->toDateString();
+            if (!isset($days[$key])) {
+                // 範囲外安全策（11/04 などが混ざっても描画しない）
+                continue;
+            }
+            $breakMin = $ad->breakPeriods->sum(function ($b) {
+                $s = \Carbon\Carbon::parse($b->start_at);
+                $e = $b->end_at ? \Carbon\Carbon::parse($b->end_at) : now();
+                return $s->diffInMinutes($e);
+            });
+
+            $days[$key]['clock_in']    = optional($ad->clock_in_at)->format('H:i');
+            $days[$key]['clock_out']   = optional($ad->clock_out_at)->format('H:i');
+            $days[$key]['break_total'] = $breakMin;
+            $days[$key]['work_total']  = (int)($ad->total_work_minutes ?? 0);
+        }
+
+        // ビューへ
         return view('admin.attendance.staff', [
-            'user'  => $user,
+            'user' => $user,
             'month' => $month,
-            'from'  => $from,
-            'to'    => $to,
-            'days'  => $days,
+            'days'  => collect($days)->values(), // 並びは 1日→末日
         ]);
     }
+
 
     public function staffCsv(\Illuminate\Http\Request $request, int $id): StreamedResponse
     {

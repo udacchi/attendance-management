@@ -11,6 +11,8 @@ class BreakPeriod extends Model
 
     protected $fillable = [
         'attendance_day_id',
+        'user_id',
+        'work_date',
         'started_at',
         'ended_at',
     ];
@@ -22,6 +24,6 @@ class BreakPeriod extends Model
 
     public function attendanceDay()
     {
-        return $this->belongsTo(AttendanceDay::class);
+        return $this->belongsTo(AttendanceDay::class, 'attendance_day_id');
     }
 }
