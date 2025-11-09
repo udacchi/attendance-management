@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use App\Models\CorrectionRequest;
 use App\Models\AttendanceDay;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class StampCorrectionRequestController extends Controller  // ★ クラス名修正
@@ -17,24 +18,37 @@ class StampCorrectionRequestController extends Controller  // ★ クラス名�
     public function index(Request $request)
     {
         $isAdmin = Auth::guard('admin')->check();
+        $status  = $request->query('status', 'pending'); // pending | approved
 
-        if ($isAdmin) {
-            // 管理者：全申請
-            $requests = CorrectionRequest::query()
-                ->latest()
-                ->paginate(20);
-        } else {
-            // 一般ユーザー：自分の申請のみ
-            $uid = Auth::id(); // web ガード
-            $requests = CorrectionRequest::query()
-                ->where('requested_by', $uid)   // カラム名はプロジェクトに合わせて
-                ->latest()
-                ->paginate(20);
-        }
+        $q = CorrectionRequest::query()
+            ->leftJoin('users', 'users.id', '=', 'correction_requests.requested_by')
+            ->leftJoin('attendance_days', 'attendance_days.id', '=', 'correction_requests.attendance_day_id')
+            ->select([
+                'correction_requests.*',
+                'users.name as user_name',
+                DB::raw('correction_requests.created_at as requested_at'),
+                // ★ 対象日を勤怠テーブルから取得して alias を target_at に
+                DB::raw('attendance_days.work_date as target_at'),
+            ])
+            ->when(!$isAdmin, function ($q) {
+                // 一般ユーザー：自分の申請のみ
+                $q->where('correction_requests.requested_by', Auth::id());
+                // 万一 requested_by が未設定でも念のため保険（不要なら削除可）
+                // $q->orWhere('attendance_days.user_id', Auth::id());
+            })
+            ->when(
+                $status === 'approved',
+                fn($q) => $q->where('correction_requests.status', 'approved'),
+                fn($q) => $q->where('correction_requests.status', 'pending')
+            )
+            ->orderByDesc('correction_requests.id');
+
+        $requests = $q->paginate(20)->withQueryString();
 
         return view('stamp_correction_request.list', [
             'requests' => $requests,
             'isAdmin'  => $isAdmin,
+            'status'   => $status,
         ]);
     }
 
