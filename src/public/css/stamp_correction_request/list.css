@@ -39,7 +39,7 @@ body { background: var(--canvas); }
 
 /* タブ */
 .tabs{
-  width:min(760px, 100%);
+  width:min(1120px, 100%);
   margin:10px auto 16px;
   display:flex;
   gap:28px;
@@ -58,11 +58,12 @@ body { background: var(--canvas); }
 
 /* テーブル */
 .table-wrap{
-  width:min(760px, 100%);
+  width:min(1120px, 100%);
   margin:8px auto 0;
 }
 .table{
   width:100%;
+  table-layout: fixed;      /* 列幅を安定させる */
   border-collapse:separate;
   border-spacing:0;
   background:var(--panel);
@@ -78,10 +79,12 @@ body { background: var(--canvas); }
   font-weight:700;
   font-size:14px;
   padding:14px 18px;
+  word-break: break-word;
   border-bottom:1px solid var(--border-strong);
 }
 .table tbody td{
   padding:14px 18px;
+  word-break: break-word;
   border-bottom:1px solid var(--border);
   font-size:14px;
   color:#222;
