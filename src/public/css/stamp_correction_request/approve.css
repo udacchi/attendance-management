@@ -1,0 +1,156 @@
+:root{
+  --page-bg:#1f1f1f;
+  --canvas:#efeff3;
+  --panel:#ffffff;
+  --text:#101010;
+  --muted:#666;
+  --border:#e8e8ee;
+  --border-strong:#e0e0e6;
+  --shadow:0 10px 26px rgba(0,0,0,.30);
+  --radius:10px;
+  --black:#000;
+  --white:#fff;
+}
+
+body{ background:var(--page-bg); }
+
+/* 外枠キャンバス */
+.approve-page{ padding:32px 16px 64px; }
+.approve-page__inner{
+  background:var(--canvas);
+  width:min(1040px,100%);
+  margin:0 auto;
+  padding:36px 32px 56px;
+  box-shadow:var(--shadow);
+}
+
+/* タイトル（左にアクセント線） */
+.page-title{
+  position:relative;
+  margin:8px 0 20px;
+  font-size:22px;
+  font-weight:700;
+  color:var(--text);
+}
+.page-title::before{
+  content:"";
+  position:absolute;
+  left:-16px; top:2px;
+  width:4px; height:24px;
+  background:#111;
+  border-radius:2px;
+}
+
+/* 詳細カード */
+.detail-card{
+  width:min(760px,100%);
+  margin:0 auto;
+  background:var(--panel);
+  border-radius:var(--radius);
+  overflow:hidden;
+  box-shadow:0 1px 0 rgba(0,0,0,.03);
+}
+.detail-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.detail-table th,
+.detail-table td{
+  padding:16px 18px;
+  border-bottom:1px solid var(--border);
+  font-size:14px;
+}
+.detail-table tr:last-child th,
+.detail-table tr:last-child td{ border-bottom:none; }
+.detail-table th{
+  width:26%;
+  text-align:left;
+  background:#f7f7fa;
+  font-weight:700;
+  color:#333;
+}
+.cell--center{ text-align:center; }
+.cell--ym{ width:19%; }
+.cell--md{ width:55%; }
+.cell--inputs{ white-space:nowrap; }
+.cell--tilde{
+  width:6%;
+  text-align:center;
+  color:#333;
+  letter-spacing:.08em;
+}
+
+/* チップ風ラベル */
+.chip{
+  display:inline-block;
+  min-width:120px;
+  height:36px;
+  padding:8px 10px;
+  border:1px solid var(--border-strong);
+  border-radius:8px;
+  background:#f6f6f8;
+  color:#111;
+  font-size:14px;
+  line-height:20px;
+}
+
+/* 備考 */
+.note-box{
+  width:100%;
+  min-height:56px;
+  padding:12px 14px;
+  border:1px solid var(--border-strong);
+  border-radius:8px;
+  background:#f6f6f8;
+  color:#111;
+  font-size:14px;
+}
+
+/* アクション */
+.approve-actions{
+  width:min(760px,100%);
+  margin:20px auto 0;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:12px;
+}
+
+.btn-primary{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:44px;
+  padding:0 28px;
+  border-radius:8px;
+  background:var(--black);
+  color:var(--white);
+  font-weight:700;
+  text-decoration:none;
+  border:none;
+  cursor:pointer;
+  transition:opacity .15s ease;
+}
+.btn-primary:hover{ opacity:.9; }
+
+/* 承認済みバッジ（右スクショの黒いピル） */
+.badge-approved{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:40px;
+  padding:0 18px;
+  border-radius:999px;
+  background:var(--black);
+  color:var(--white);
+  font-weight:700;
+  letter-spacing:.04em;
+  animation: pop .18s ease-out;
+}
+@keyframes pop{
+  0%{ transform:scale(.96); opacity:.0; }
+  100%{ transform:scale(1); opacity:1; }
+}
