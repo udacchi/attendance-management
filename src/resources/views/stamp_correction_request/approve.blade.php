@@ -1,9 +1,24 @@
+@php
+  $tz   = config('app.timezone', 'Asia/Tokyo');
+  $date = isset($date) ? $date : (!empty($req->target_at) ? \Carbon\Carbon::parse($req->target_at, $tz) : null);
+
+  // "2025-10-12 09:00:00" 等を "09:00" 表示にする小さなヘルパ
+  $hm = function ($v) use ($tz) {
+      if (empty($v)) return '-';
+      try {
+        return \Carbon\Carbon::parse($v, $tz)->format('H:i');
+      } catch (\Throwable $e) {
+        return $v; // 既に "09:00" 形式ならそのまま出す
+      }
+  };
+@endphp
+
 @extends('layouts.app')
 
 @section('title', '修正申請承認')
 
 @section('css')
-<link rel="stylesheet" href="{{ asset('css/admin/stamp_correction_request/approve.css') }}">
+<link rel="stylesheet" href="{{ asset('css/stamp_correction_request/approve.css') }}">
 @endsection
 
 @section('content')
@@ -28,24 +43,31 @@
   <div class="approve-page__inner">
 
     <h1 class="page-title">勤怠詳細</h1>
+    
+    @php
+      $fmtDateY = optional($date)->isoFormat('YYYY年') ?? '-';
+      $fmtDateMD = optional($date)->isoFormat('M月D日') ?? '-';
+    @endphp
 
     <div class="detail-card">
       <table class="detail-table">
         <tbody>
           <tr>
             <th>名前</th>
-            <td colspan="3" class="cell--center">{{ $record['name'] }}</td>
+            <td colspan="3" class="cell--center">
+              {{ optional($req->user)->name ?? ($req->name ?? '-') }}
+            </td>
           </tr>
 
           <tr>
             <th>日付</th>
-            <td class="cell--center cell--ym">{{ $date->isoFormat('YYYY年') }}</td>
-            <td class="cell--center cell--md" colspan="2">{{ $date->isoFormat('M月D日') }}</td>
+            <td class="cell--center cell--ym">{{ $fmtDateY }}</td>
+            <td class="cell--center cell--md" colspan="2">{{ $fmtDateMD }}</td>
           </tr>
 
           <tr>
             <th>出勤・退勤</th>
-            <td class="cell--inputs"><span class="chip">{{ $record['clock_in'] ?? '-' }}</span></td>
+            <td class="cell--inputs"><span class="chip">{{ $record['clock_in']  ?? '-' }}</span></td>
             <td class="cell--tilde">〜</td>
             <td class="cell--inputs"><span class="chip">{{ $record['clock_out'] ?? '-' }}</span></td>
           </tr>
@@ -59,9 +81,9 @@
 
           <tr>
             <th>休憩2</th>
-            <td class="cell--inputs"><span class="chip">{{ $record['break2_start'] ?? '' }}</span></td>
+            <td class="cell--inputs"><span class="chip">{{ $record['break2_start'] ?? '-' }}</span></td>
             <td class="cell--tilde">〜</td>
-            <td class="cell--inputs"><span class="chip">{{ $record['break2_end'] ?? '' }}</span></td>
+            <td class="cell--inputs"><span class="chip">{{ $record['break2_end'] ?? '-' }}</span></td>
           </tr>
 
           <tr>
@@ -74,17 +96,16 @@
       </table>
     </div>
 
-    <!-- 承認アクション -->
+    {{-- 承認アクション --}}
     <div class="approve-actions" id="approveArea">
-      @if($approved)
+      @if ($approved ?? false)
         <span class="badge-approved" id="approvedBadge">承認済み</span>
       @else
         <form id="approveForm"
-              action="{{ route('admin.stamp_correction_request.approve', ['request' => $requestId]) }}"
-              method="POST"
-              data-approve-url="{{ route('admin.stamp_correction_request.approve', ['request' => $requestId]) }}">
+              action="{{ route('stamp_correction_request.approve.store', ['attendance_correct_request_id' => $req->id]) }}"
+              method="POST">
           @csrf
-          <button type="submit" class="btn-primary" id="approveBtn">承認</button>
+          <button type="submit" class="btn-primary">承認</button>
         </form>
       @endif
     </div>

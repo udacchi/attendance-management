@@ -24,17 +24,22 @@ class CorrectionRequest extends Model
     ];
 
     protected $casts = [
-        'proposed_clock_in_at' => 'datetime',
-        'proposed_clock_out_at' => 'datetime',
+        'target_at'     => 'datetime',
+        'clock_in'      => 'datetime',
+        'clock_out'     => 'datetime',
+        'break1_start'  => 'datetime',
+        'break1_end'    => 'datetime',
+        'break2_start'  => 'datetime',
+        'break2_end'    => 'datetime',
     ];
 
     // --- Relations ---
     public function attendanceDay()
     {
-        return $this->belongsTo(AttendanceDay::class);
+        return $this->belongsTo(AttendanceDay::class, 'attendance_day_id');
     }
 
-    public function requester()
+    public function user()
     {
         return $this->belongsTo(User::class, 'requested_by');
     }

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\StampCorrectionRequestController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
-use App\Http\Controllers\Admin\StampCorrectionApprovalController as AdminStampCorrectionApprovalController;
+use App\Http\Controllers\StampCorrectionApprovalController;
 use App\Http\Controllers\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 
@@ -120,12 +120,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
         ->whereNumber('id')->name('attendance.staff.csv');
 
     // 修正申請 承認（管理側）
-    Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [AdminStampCorrectionApprovalController::class, 'index'])
-        ->name('corrections.list');
+    Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [StampCorrectionApprovalController::class, 'show'])
+        ->whereNumber('attendance_correct_request_id')
+        ->name('stamp_correction_request.approve');
 
-    // 修正申請 詳細（管理側）
-    Route::get('/stamp_correction_request/{correctionRequest}', [AdminStampCorrectionApprovalController::class, 'show'])
-        ->name('corrections.show');
+    // 承認実行（POST）
+    Route::post(
+        '/stamp_correction_request/approve/{attendance_correct_request_id}',[StampCorrectionApprovalController::class, 'approve'])->whereNumber('attendance_correct_request_id')
+        ->name('stamp_correction_request.approve.store');
 
     // 修正編集（管理者）
     Route::get('/attendance/{user}/edit', [AdminAttendanceController::class, 'editByUserDate'])
@@ -139,12 +141,24 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
 
 /*
 |--------------------------------------------------------------------------
-| 共有ルート
+| 申請一覧
 |--------------------------------------------------------------------------
 */
 Route::get('/stamp_correction_request/list', [StampCorrectionRequestController::class, 'index'])
     ->name('stamp_correction_request.list')
     ->middleware('auth.any');
+
+// 修正申請 承認（管理側）
+Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}',[StampCorrectionApprovalController::class, 'show'])
+    ->whereNumber('attendance_correct_request_id')
+    ->middleware(['auth:admin', 'can:admin'])
+    ->name('stamp_correction_request.approve');
+
+// 承認実行（POST）
+Route::post('/stamp_correction_request/approve/{attendance_correct_request_id}',[StampCorrectionApprovalController::class, 'approve'])
+    ->whereNumber('attendance_correct_request_id')
+    ->middleware(['auth:admin', 'can:admin'])
+    ->name('stamp_correction_request.approve.store');
 
 /*
 |--------------------------------------------------------------------------
