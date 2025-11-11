@@ -119,16 +119,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
     Route::get('/attendance/staff/{id}/csv', [AdminAttendanceController::class, 'staffCsv'])
         ->whereNumber('id')->name('attendance.staff.csv');
 
-    // 修正申請 承認（管理側）
-    Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [StampCorrectionApprovalController::class, 'show'])
-        ->whereNumber('attendance_correct_request_id')
-        ->name('stamp_correction_request.approve');
-
-    // 承認実行（POST）
-    Route::post(
-        '/stamp_correction_request/approve/{attendance_correct_request_id}',[StampCorrectionApprovalController::class, 'approve'])->whereNumber('attendance_correct_request_id')
-        ->name('stamp_correction_request.approve.store');
-
     // 修正編集（管理者）
     Route::get('/attendance/{user}/edit', [AdminAttendanceController::class, 'editByUserDate'])
         ->name('attendance.edit');
@@ -148,17 +138,18 @@ Route::get('/stamp_correction_request/list', [StampCorrectionRequestController::
     ->name('stamp_correction_request.list')
     ->middleware('auth.any');
 
-// 修正申請 承認（管理側）
-Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}',[StampCorrectionApprovalController::class, 'show'])
-    ->whereNumber('attendance_correct_request_id')
-    ->middleware(['auth:admin', 'can:admin'])
-    ->name('stamp_correction_request.approve');
+// 承認画面／承認実行をまとめて保護
+Route::prefix('admin')->middleware(['auth:admin', 'can:admin'])->group(function () {
+    Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}',
+        [StampCorrectionApprovalController::class, 'show']
+    )->whereNumber('attendance_correct_request_id')
+     ->name('stamp_correction_request.approve');
 
-// 承認実行（POST）
-Route::post('/stamp_correction_request/approve/{attendance_correct_request_id}',[StampCorrectionApprovalController::class, 'approve'])
-    ->whereNumber('attendance_correct_request_id')
-    ->middleware(['auth:admin', 'can:admin'])
-    ->name('stamp_correction_request.approve.store');
+    Route::post('/stamp_correction_request/approve/{attendance_correct_request_id}',
+        [StampCorrectionApprovalController::class, 'approve']
+    )->whereNumber('attendance_correct_request_id')
+     ->name('stamp_correction_request.approve.store');
+});
 
 /*
 |--------------------------------------------------------------------------

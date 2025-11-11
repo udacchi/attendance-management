@@ -99,57 +99,20 @@
     {{-- 承認アクション --}}
     @php $approved = ($req->status === 'approved'); @endphp
 
-    {{-- ページのどこでもOK：見えないフォーム本体（ネスト回避） --}}
-    <form id="approveForm"
-          action="{{ route('stamp_correction_request.approve.store', ['attendance_correct_request_id' => $req->id]) }}"
-          method="POST" style="display:none">
-      @csrf
-    </form>
-
-    <div class="approve-actions" id="approveArea">
-      @if ($approved)
-        <span class="badge-approved" id="approvedBadge">承認済み</span>
-      @else
-        {{-- ボタンはフォーム外に置き、form 属性で送信先を指定 --}}
-        <button type="submit" form="approveForm" class="btn-primary">承認</button>
-      @endif
-    </div>
-
+    @if ($approved)
+      <div class="approve-actions">
+        <span class="badge-approved">承認済み</span>
+      </div>
+    @else
+      <div class="approve-actions">
+        <form action="{{ url('/admin/stamp_correction_request/approve/'.$req->id) }}"
+              method="POST" novalidate>
+          @csrf
+          <button type="submit" class="btn-primary">承認</button>
+        </form>
+      </div>
+    @endif
   </div>
 </div>
 
-<!-- Progressive Enhancement: 送信後にその場で「承認済み」に変える -->
-<script>
-  (function(){
-    const form = document.getElementById('approveForm');
-    if(!form) return;
-
-    const btn  = document.getElementById('approveBtn');
-    const url  = form.dataset.approveUrl;
-    const token = form.querySelector('input[name="_token"]').value;
-
-    form.addEventListener('submit', async (e) => {
-      // AJAXで送れる場合はページ遷移なしで更新
-      e.preventDefault();
-      btn.disabled = true;
-      btn.textContent = '処理中…';
-
-      try{
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest'},
-        });
-
-        if(!res.ok){ throw new Error('approve failed'); }
-
-        // 成功: フォームを「承認済み」に差し替え
-        const area = document.getElementById('approveArea');
-        area.innerHTML = '<span class="badge-approved" id="approvedBadge">承認済み</span>';
-      }catch(err){
-        // 失敗時は通常送信にフォールバック
-        form.submit();
-      }
-    }, { once:false });
-  })();
-</script>
 @endsection
