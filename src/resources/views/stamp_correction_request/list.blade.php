@@ -2,13 +2,11 @@
   $status  = $status ?? 'pending';
   $layout  = ($isAdmin ?? false) ? 'layouts.admin' : 'layouts.app';
 
-  // 一覧は共通ルート名に固定
+  // 一覧は共通
   $listRt  = 'stamp_correction_request.list';
-
-  $showRt  = ($isAdmin ?? false) ? 'admin.corrections.show' : 'stamp_correction_request.show';
 @endphp
 
-@extends($layout)
+@extends('layouts.app')
 
 @section('title', '申請一覧')
 
@@ -62,14 +60,27 @@
                 {{ $req ? $req->isoFormat('YYYY/MM/DD') : '-' }}
               </td>
               <td class="cell--link">
+                @php
+                  // 対象日（YYYY-MM-DD）を安全に取り出す
+                  $targetDate = $tgt ? $tgt->toDateString() : null;
+                @endphp
+              
                 @if(($isAdmin ?? false))
-              {{-- ★ ここが肝。param名は correctionRequest、値は $row->id（オブジェクトアクセス） --}}
+                  {{-- 管理者：承認画面へ --}}
                   <a class="detail-link"
-                     href="{{ route('admin.corrections.show', ['correctionRequest' => $row->id]) }}">
+                     href="{{ route('stamp_correction_request.approve', ['attendance_correct_request_id' => $row->id]) }}">
                     詳細
                   </a>
                 @else
-                  詳細
+                  {{-- 一般ユーザー：勤怠詳細へ（自分の詳細なので日付のみでOK想定） --}}
+                  @if ($targetDate && Route::has('attendance.detail'))
+                    <a class="detail-link"
+                       href="{{ route('attendance.detail', ['date' => $targetDate]) }}">
+                      詳細
+                    </a>
+                  @else
+                    詳細
+                  @endif
                 @endif
               </td>
             </tr>

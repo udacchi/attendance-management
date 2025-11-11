@@ -97,16 +97,21 @@
     </div>
 
     {{-- 承認アクション --}}
+    @php $approved = ($req->status === 'approved'); @endphp
+
+    {{-- ページのどこでもOK：見えないフォーム本体（ネスト回避） --}}
+    <form id="approveForm"
+          action="{{ route('stamp_correction_request.approve.store', ['attendance_correct_request_id' => $req->id]) }}"
+          method="POST" style="display:none">
+      @csrf
+    </form>
+
     <div class="approve-actions" id="approveArea">
-      @if ($approved ?? false)
+      @if ($approved)
         <span class="badge-approved" id="approvedBadge">承認済み</span>
       @else
-        <form id="approveForm"
-              action="{{ route('stamp_correction_request.approve.store', ['attendance_correct_request_id' => $req->id]) }}"
-              method="POST">
-          @csrf
-          <button type="submit" class="btn-primary">承認</button>
-        </form>
+        {{-- ボタンはフォーム外に置き、form 属性で送信先を指定 --}}
+        <button type="submit" form="approveForm" class="btn-primary">承認</button>
       @endif
     </div>
 

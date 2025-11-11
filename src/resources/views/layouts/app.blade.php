@@ -16,35 +16,37 @@
 </head>
 
 @php
-  // 現在地（/admin配下かどうか）
-  $isAdminArea   = request()->is('admin*');
-
   // 認証状態（通常ユーザー／管理者ガード）
-  $userLoggedIn  = auth()->check();
-  // adminガードを使っていない場合もあるので、存在チェックを挟んで安全に
+  $userLoggedIn = auth()->check();
+
+  // adminガードは try で安全にチェック
   try {
       $adminLoggedIn = auth('admin')->check();
   } catch (\Throwable $e) {
       $adminLoggedIn = false;
   }
 
-  // ナビを出すかどうか（管理者ログイン画面は非表示、ユーザーは未ログインなら非表示）
-  $hideNav = $isAdminArea
+  // ★ 変更点：URL だけでなく「admin ガードがログイン中なら管理者ヘッダー」を採用
+  $isAdminContext = request()->is('admin*') || $adminLoggedIn;
+
+  // ナビを出すかどうか
+  // 管理者ログイン画面は非表示、ユーザーは未ログインなら非表示
+  $hideNav = $isAdminContext
       ? (request()->routeIs('admin.login') || request()->is('admin/login'))
       : !$userLoggedIn;
 @endphp
 
 <body>
-<header class="{{ $isAdminArea ? 'admin-header' : 'user-header' }}">
-  <div class="{{ $isAdminArea ? 'admin-header__inner' : 'user-header__inner' }}">
+<header class="{{ $isAdminContext ? 'admin-header' : 'user-header' }}">
+  <div class="{{ $isAdminContext ? 'admin-header__inner' : 'user-header__inner' }}">
     <!-- 左：ロゴ -->
-    <a href="{{ $isAdminArea ? url('/admin') : url('/') }}" class="header__logo">
+    <a href="{{ $isAdminContext ? url('/admin') : url('/') }}" class="header__logo">
       <img src="{{ asset('images/logo.svg') }}" alt="COACHTECH" width="370" height="36">
     </a>
 
     {{-- 右：ナビ（必要に応じて出し分け／子ビューから差し替え可能） --}}
     @unless($hideNav)
-      @if ($isAdminArea)
+      @if ($isAdminContext)
         {{-- 管理者ナビ：子ビューが @section('admin_nav') を用意していれば差し替え、無ければデフォルト --}}
         @hasSection('admin_nav')
           @yield('admin_nav')
@@ -97,7 +99,7 @@
 </header>
 
 {{-- コンテンツ領域（クラス名もユーザー／管理者で切替可） --}}
-<div class="{{ $isAdminArea ? 'content' : 'container' }}">
+<div class="{{ $isAdminContext ? 'content' : 'container' }}">
   @yield('content')
 </div>
 
