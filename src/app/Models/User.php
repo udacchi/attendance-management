@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class User extends Authenticatable implements MustVerifyEmail // ★ implements を追加
 {
-    use HasFactory, Notifiable;
+    use Notifiable, MustVerifyEmailTrait;
 
     protected $fillable = [
         'name',

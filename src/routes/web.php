@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController
 use App\Http\Controllers\StampCorrectionApprovalController;
 use App\Http\Controllers\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,6 +21,14 @@ use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 
 // 動作チェック用トップ（必要なければ削除可）
 Route::get('/', fn() => 'OK')->name('home');
+
+// ★ 一般ユーザーの会員登録（表示＆送信）
+Route::middleware('guest:web')->group(function () {
+    // GET /register（リンク先）※ルート名は register に統一
+    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+    // POST /register（登録実行）
+    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -162,3 +171,6 @@ Route::get('/dev-logout', function () {
     request()->session()->regenerateToken();
     return redirect()->route('login');
 });
+
+
+
