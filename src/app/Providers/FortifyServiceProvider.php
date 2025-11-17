@@ -7,6 +7,7 @@ use Laravel\Fortify\Fortify;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\LoginResponse;
 use Laravel\Fortify\Contracts\RegisterResponse;
 use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
@@ -18,20 +19,23 @@ use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\LogoutResponse as CustomLogoutResponse;
 
-// ★ 追加
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+// ★ 追加：FormRequest
+use App\Http\Requests\Auth\LoginRequest;
 
 class FortifyServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // ログイン後に勤怠打刻画面へリダイレクト
+        // ★ ログイン後：未認証なら認証誘導、認証済みなら勤怠打刻へ
         $this->app->singleton(LoginResponse::class, function () {
             return new class implements LoginResponse {
                 public function toResponse($request)
                 {
+                    $user = $request->user();
+                    if ($user && !$user->hasVerifiedEmail()) {
+                        return redirect()->route('verification.notice');
+                    }
+                    // 認証済みユーザーの遷移先（必要なら変更）
                     return redirect()->intended(route('attendance.stamp'));
                 }
             };
@@ -55,31 +59,33 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::registerView(fn() => view('auth.register'));
         Fortify::verifyEmailView(fn() => view('auth.verify-email'));
 
-        // ★ 未認証ユーザーをログイン不可にする
-        Fortify::authenticateUsing(function (Request $request) {
-            
-            $user = User::where('email', $request->input('email'))->first();
+        // ★ 入力バリデーション（FormRequest）を認証前に差し込む
+        Fortify::authenticateThrough(function (Request $request) {
+            // 念のためロケール固定（翻訳に影響する場合の保険）
+            app()->setLocale('ja');
 
-            if (! $user || ! Hash::check($request->input('password'), $user->password)) {
-                return null; // 通常の認証失敗
-            }
+            // ★ FormRequestを「使って」ルール/メッセージ/属性を取得し、こちらで確実に検証する
+            /** @var \App\Http\Requests\Auth\LoginRequest $form */
+            $form = app(LoginRequest::class);
 
-            if (! $user->hasVerifiedEmail()) {
-                try {
-                    $user->sendEmailVerificationNotification();
-                } catch (\Throwable $e) {
-                }
-
-                throw ValidationException::withMessages([
-                    Fortify::username() =>
-                    'メールアドレスの確認が完了していません。受信トレイをご確認ください。（認証メールを再送しました）',
-                ]);
-            }
-
-            return $user; // 認証OK
+            Validator::make(
+                $request->all(),
+                $form->rules(),
+                method_exists($form, 'messages') ? $form->messages() : [],
+                method_exists($form, 'attributes') ? $form->attributes() : []
+            )->validate(); // ← 失敗時は自動でリダイレクト＆$errorsへ（無名バッグ）
+            // 以降は Fortify 既定のパイプライン（2FA 使ってなければそのまま）
+            return array_filter([
+                \Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable::class,
+                \Laravel\Fortify\Actions\AttemptToAuthenticate::class,
+                \Laravel\Fortify\Actions\PrepareAuthenticatedSession::class,
+            ]);
         });
 
-        // ★ 契約 ↔ 具象クラスの紐付け
+        // ★ いままでの authenticateUsing で未認証を弾く処理は「削除」してください
+        // Fortify::authenticateUsing(...) は不要
+
+        // 契約 ↔ 具象クラスの紐付け
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
