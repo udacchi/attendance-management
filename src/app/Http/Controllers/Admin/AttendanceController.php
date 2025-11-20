@@ -74,17 +74,26 @@ class AttendanceController extends Controller
             ->get();
 
         $records = $dayItems->map(function ($a) use ($fmtTime, $minutesToHMM) {
+
+            // ★ 出勤・退勤どちらか1つでも入っていれば「打刻あり」とみなす
+            $hasStamp = ($a->clock_in_at !== null) || ($a->clock_out_at !== null);
+
             return [
                 'id'          => $a->id,
                 'user_id'     => $a->user_id,
                 'name'        => optional($a->user)->name ?? '—',
                 'clock_in'    => $fmtTime($a->clock_in_at),
                 'clock_out'   => $fmtTime($a->clock_out_at),
-                // ↓ これらのカラムが無い場合は後述の「代替計算」に差し替え
-                'break_total' => $minutesToHMM($a->total_break_minutes),
-                'work_total'  => $minutesToHMM($a->total_work_minutes),
+
+                // ★ 両方とも未打刻のときは休憩を「－」固定
+                'break_total' => $hasStamp ? $minutesToHMM($a->break_minutes) : '–',
+
+                // 合計はこれまで通りアクセサ経由（未打刻なら null → minutesToHMM で "–"）
+                'work_total'  => $minutesToHMM($a->work_minutes),
             ];
         })->values();
+
+
 
         $users = User::query()->select('id', 'name')->orderBy('name')->get();
 
@@ -313,7 +322,17 @@ class AttendanceController extends Controller
                 $e = ($colEnd   && $bp->{$colEnd})   ? Carbon::parse($bp->{$colEnd},   $tz) : null;
                 if ($s && $e && $e->gt($s)) $breakSeconds += $e->diffInSeconds($s);
             }
-            $workSeconds = ($in && $out && $out->gt($in)) ? max(0, $out->diffInSeconds($in) - $breakSeconds) : 0;
+
+            // ★ 退勤 < 出勤 のときは「翌日の退勤」とみなして計算する
+            $adjustedOut = $out ? $out->copy() : null;
+            if ($in && $adjustedOut && $adjustedOut->lt($in)) {
+                $adjustedOut->addDay();   // 0時跨ぎ対応：退勤を+1日
+            }
+
+            // ★ 調整済みの退勤時刻で勤務秒数を計算
+            $workSeconds = ($in && $adjustedOut)
+                ? max(0, $adjustedOut->diffInSeconds($in) - $breakSeconds)
+                : 0;
 
             if ($attendanceDay->isFillable('total_break_minutes')) {
                 $attendanceDay->total_break_minutes = intdiv($breakSeconds, 60);

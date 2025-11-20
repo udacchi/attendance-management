@@ -27,6 +27,38 @@ class AttendanceDay extends Model
         'clock_out_at' => 'datetime',
     ];
 
+    // === ここから 0時跨ぎ対応付きの合計再計算メソッド ===
+    public function recalcTotals(): void
+    {
+        // 出勤 or 退勤がない場合は計算しない
+        if (!$this->clock_in_at || !$this->clock_out_at) {
+            $this->total_work_minutes  = null;
+            $this->total_break_minutes = null;
+            return;
+        }
+
+        // コピーを作成（元の値を壊さないため）
+        $clockIn  = $this->clock_in_at->copy();
+        $clockOut = $this->clock_out_at->copy();
+
+        // ★ ここが今回の追加ポイント：退勤 < 出勤 の場合は翌日にずらす
+        if ($clockOut->lessThan($clockIn)) {
+            $clockOut->addDay();   // 退勤を +1日
+        }
+
+        // まずは単純な勤務時間（休憩抜き）を分で計算
+        $workMinutesRaw = $clockIn->diffInMinutes($clockOut);
+
+        // 休憩時間の合計（既に計算済みならそのまま、BreakPeriod から計算しているならそちらを利用）
+        // ここでは「すでに total_break_minutes に入っている」想定にしています。
+        $breakMinutes = $this->total_break_minutes ?? 0;
+
+        // 最終的な勤務時間（休憩を引く）
+        $workMinutes = max(0, $workMinutesRaw - $breakMinutes);
+
+        $this->total_work_minutes = $workMinutes;
+    }
+
     // --- Relations ---
     public function user()
     {
@@ -81,15 +113,20 @@ class AttendanceDay extends Model
      */
     public function getWorkMinutesAttribute(): ?int
     {
-        // 両方の打刻が揃っているなら、DBの total_work_minutes に関わらず計算を優先
+        // 両方の打刻が揃っているなら、0時跨ぎを考慮して計算を優先
         if ($this->clock_in_at && $this->clock_out_at) {
             $tz  = config('app.timezone', 'Asia/Tokyo');
-            $in  = \Carbon\Carbon::parse($this->clock_in_at)->timezone($tz);
-            $out = \Carbon\Carbon::parse($this->clock_out_at)->timezone($tz);
+            $in  = Carbon::parse($this->clock_in_at)->timezone($tz);
+            $out = Carbon::parse($this->clock_out_at)->timezone($tz);
 
-            $gross = $out->diffInMinutes($in, false); // 退勤-出勤
-            if ($gross < 0) $gross = 0;
+            // ★ 退勤 < 出勤 のときは「翌日の退勤」とみなす（0時跨ぎ対応）
+            if ($out->lt($in)) {
+                $out->addDay();
+            }
 
+            $gross = $out->diffInMinutes($in); // 必ず0以上になる
+
+            // 休憩分を引く
             return max(0, $gross - $this->break_minutes);
         }
 
@@ -100,6 +137,7 @@ class AttendanceDay extends Model
 
         return null;
     }
+
 
     /* ===== 表示用（HH:MM） ===== */
 
