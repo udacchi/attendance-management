@@ -16,16 +16,16 @@ class AttendanceDetailRequest extends FormRequest
     {
         return [
             // 出勤・退勤
-            'clock_in'  => ['nullable', 'date_format:H:i'],
-            'clock_out' => ['nullable', 'date_format:H:i'],
+            'clock_in'  => 'nullable|date_format:H:i',
+            'clock_out' => 'nullable|date_format:H:i',
 
             // 休憩（配列）
-            'breaks'               => ['array'],
-            'breaks.*.start'       => ['nullable', 'date_format:H:i'],
-            'breaks.*.end'         => ['nullable', 'date_format:H:i'],
+            'breaks'               => 'array',
+            'breaks.*.start'       => 'nullable|date_format:H:i',
+            'breaks.*.end'         => 'nullable|date_format:H:i',
 
             // 備考
-            'note' => ['required', 'string', 'max:255'],  // FN029-4
+            'note' => 'required|string|max:255',  // FN029-4
         ];
     }
 
