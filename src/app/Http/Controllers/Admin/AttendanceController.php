@@ -395,6 +395,7 @@ class AttendanceController extends Controller
         $to   = $month->copy()->endOfMonth();
 
         // 1) 空の一覧を作る
+        // 1) 空の一覧を作る
         $days = [];
         for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
             $key = $d->toDateString();
@@ -402,10 +403,11 @@ class AttendanceController extends Controller
                 'date'        => $d->copy(),
                 'clock_in'    => null,
                 'clock_out'   => null,
-                'break_total' => 0,
-                'work_total'  => 0,
+                'break_total' => null,
+                'work_total'  => null,
             ];
         }
+
 
         // 2) 月内の実データを取得（★ work_date で絞る）
         $records = \App\Models\AttendanceDay::query()
@@ -420,20 +422,20 @@ class AttendanceController extends Controller
         foreach ($records as $ad) {
             $key = $ad->work_date->toDateString();
             if (!isset($days[$key])) {
-                // 範囲外安全策（11/04 などが混ざっても描画しない）
+                // 範囲外安全策（範囲外の日付は無視）
                 continue;
             }
-            $breakMin = $ad->breakPeriods->sum(function ($b) {
-                $s = \Carbon\Carbon::parse($b->start_at);
-                $e = $b->end_at ? \Carbon\Carbon::parse($b->end_at) : now();
-                return $s->diffInMinutes($e);
-            });
 
-            $days[$key]['clock_in']    = optional($ad->clock_in_at)->format('H:i');
-            $days[$key]['clock_out']   = optional($ad->clock_out_at)->format('H:i');
-            $days[$key]['break_total'] = $breakMin;
-            $days[$key]['work_total']  = (int)($ad->total_work_minutes ?? 0);
+            $days[$key]['clock_in']  = optional($ad->clock_in_at)->format('H:i');
+            $days[$key]['clock_out'] = optional($ad->clock_out_at)->format('H:i');
+
+            // ★ モデルのアクセサを利用して「表示用 HH:MM」を取得する
+            //    - break_total: 休憩合計（m>0 のときだけ 'HH:MM'、それ以外は null）
+            //    - work_total : 勤務合計（0時跨ぎ＋休憩控除済み 'HH:MM'／未打刻は null）
+            $days[$key]['break_total'] = $ad->break_total;  // 例: '01:30' / null
+            $days[$key]['work_total']  = $ad->work_total;   // 例: '08:00' / null
         }
+
 
         // ビューへ
         return view('admin.attendance.staff', [
