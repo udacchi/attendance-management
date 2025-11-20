@@ -8,19 +8,10 @@
 
 @section('content')
 @php
-  /**
-   * 受け取り想定
-   * $date   : \Carbon\Carbon
-   * $record : [
-   *   'name' => '西 伶奈',
-   *   'clock_in' => '09:00', 'clock_out' => '18:00',
-   *   'break1_start' => '12:00', 'break1_end' => '13:00',
-   *   'break2_start' => null, 'break2_end' => null,
-   *   'note' => '電車遅延のため',
-   * ]
-   * $isPending : bool  // 承認待ちなら true
-   */
   $isPending = $isPending ?? false;
+
+  // ルートに渡す user_id を決定（record に無ければ $user->id を使う）
+  $editUserId = $record['user_id'] ?? ($user->id ?? null);
 @endphp
 
 <div class="att-detail">
@@ -86,10 +77,13 @@
     </div>
 
     {{-- 承認待ちでない場合のみ表示 --}}
-    @if(!$isPending)
+    @if(!$isPending && $editUserId)
       <div class="detail-actions">
-        <form method="POST" action="{{ route('attendance.request', ['date' => $date->toDateString()]) }}">
-          @csrf
+        <form method="GET"
+              action="{{ route('admin.attendance.edit', [
+                        'user' => $editUserId,
+                        'date' => $date->toDateString(),
+                      ]) }}">
           <button type="submit" class="btn-primary">修正</button>
         </form>
       </div>
