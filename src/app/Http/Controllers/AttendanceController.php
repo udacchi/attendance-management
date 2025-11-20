@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Models\AttendanceDay;
 use App\Models\BreakPeriod;
 use Carbon\Carbon;
+use App\Models\CorrectionRequest;
 
 class AttendanceController extends Controller
 {
@@ -226,42 +227,65 @@ class AttendanceController extends Controller
         $user = Auth::guard('web')->user();
         if (!$user) abort(401);
 
-        $tz = config('app.timezone', 'Asia/Tokyo');
-        $day = Carbon::createFromFormat('Y-m-d', $date, $tz);
+        $tz  = config('app.timezone', 'Asia/Tokyo');
+        $day = Carbon::createFromFormat('Y-m-d', $date, $tz)->startOfDay();
 
-        $record = AttendanceDay::with('breaks')
+        // 対象日の勤怠 + 休憩
+        $attendance = AttendanceDay::with('breaks')
             ->where('user_id', $user->id)
             ->whereDate('work_date', $day->toDateString())
             ->first();
 
-        // 休憩合算（表示用）
-        // ビュー期待の配列へ整形
-        $recordArr = [];
-        if ($record) {
-            $recordArr['name']      = $user->name ?? '';
-            $recordArr['clock_in']  = $record->clock_in_at  ? Carbon::parse($record->clock_in_at)->tz($tz)->format('H:i') : '';
-            $recordArr['clock_out'] = $record->clock_out_at ? Carbon::parse($record->clock_out_at)->tz($tz)->format('H:i') : '';
+        // ---- record 配列を整形（今まで説明した通り）----
+        $record = [
+            'user_id'   => $user->id,
+            'name'      => $user->name ?? '',
+            'clock_in'  => '',
+            'clock_out' => '',
+            'note'      => '',
+            'breaks'    => [],
+        ];
 
-            // 休憩は最大2枠だけ表示（必要に応じて増やしてOK）
-            $breaks = $record->breaks->sortBy('started_at')->values();
-            $recordArr['break1_start'] = isset($breaks[0]) && $breaks[0]->started_at
-                ? Carbon::parse($breaks[0]->started_at)->tz($tz)->format('H:i') : '';
-            $recordArr['break1_end']   = isset($breaks[0]) && $breaks[0]->ended_at
-                ? Carbon::parse($breaks[0]->ended_at)->tz($tz)->format('H:i')   : '';
-            $recordArr['break2_start'] = isset($breaks[1]) && $breaks[1]->started_at
-                ? Carbon::parse($breaks[1]->started_at)->tz($tz)->format('H:i') : '';
-            $recordArr['break2_end']   = isset($breaks[1]) && $breaks[1]->ended_at
-                ? Carbon::parse($breaks[1]->ended_at)->tz($tz)->format('H:i')   : '';
+        if ($attendance) {
+            $record['clock_in']  = $attendance->clock_in_at
+                ? Carbon::parse($attendance->clock_in_at)->tz($tz)->format('H:i')
+                : '';
+            $record['clock_out'] = $attendance->clock_out_at
+                ? Carbon::parse($attendance->clock_out_at)->tz($tz)->format('H:i')
+                : '';
+            $record['note']      = $attendance->note ?? '';
 
-            $recordArr['note'] = $record->note ?? '';
+            $breaks = $attendance->breaks->sortBy('started_at')->values();
+            foreach ($breaks as $bp) {
+                $record['breaks'][] = [
+                    'start' => $bp->started_at
+                        ? Carbon::parse($bp->started_at)->tz($tz)->format('H:i')
+                        : '',
+                    'end'   => $bp->ended_at
+                        ? Carbon::parse($bp->ended_at)->tz($tz)->format('H:i')
+                        : '',
+                ];
+            }
         }
 
-        // 承認待ちフラグ（運用に合わせて判定を差し替え）
-        $isPending = false;
+        // 休憩 +1 行分
+        $record['breaks'][] = ['start' => '', 'end' => ''];
+
+        // ---- ★ 承認待ち判定（work_date を使わない）----
+        $attendanceId = $attendance->id ?? null;
+
+        if ($attendanceId) {
+            $isPending = CorrectionRequest::where('requested_by', $user->id)
+                ->where('attendance_day_id', $attendanceId) // ← ここで紐づけ
+                ->where('status', 'pending')
+                ->exists();
+        } else {
+            $isPending = false;
+        }
 
         return view('attendance.detail', [
             'date'      => $day,
-            'record'    => $recordArr,
+            'record'    => $record,
             'isPending' => $isPending,
         ]);
     }

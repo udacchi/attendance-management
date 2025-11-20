@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use App\Models\CorrectionRequest;
 use App\Models\AttendanceDay;
+use App\Http\Requests\AttendanceDetailRequest;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -56,34 +57,47 @@ class StampCorrectionRequestController extends Controller  // ★ クラス名�
      * 勤怠詳細（/attendance/{date}）からの「修正」クリックで承認待ち申請を作成
      * ルート名: attendance.request  POST /attendance/{date}/request
      */
-    public function store(Request $request, string $date)
+    public function store(AttendanceDetailRequest $request, $date)
     {
-        $userId   = Auth::id();
-        $tz       = config('app.timezone', 'Asia/Tokyo');
-        $workDate = Carbon::createFromFormat('Y-m-d', $date, $tz)->startOfDay();
+        $tz   = config('app.timezone', 'Asia/Tokyo');
+        $user = Auth::user();
+        $day  = Carbon::parse($date, $tz)->startOfDay();
 
-        // 1) 当日の AttendanceDay を取得（ユーザー x 日付）
-        $attendance = AttendanceDay::where('user_id', $userId)
-            ->whereDate('work_date', $workDate)
-            ->firstOrFail();
+        // 対象の勤怠を取得/作成
+        $attendanceDay = AttendanceDay::firstOrCreate(
+            [
+                'user_id'   => $user->id,
+                'work_date' => $day->toDateString(),
+            ],
+            []
+        );
 
-        // 2) 既に pending の申請があるか（attendance_day_id で判定）
-        $exists = CorrectionRequest::where('requested_by', $userId)
-            ->where('attendance_day_id', $attendance->id)
-            ->where('status', 'pending') // ← 文字列は必ずクォート
+        // ★ 既に同じ勤怠に対する pending 申請があるか？
+        $alreadyPending = CorrectionRequest::where('requested_by', $user->id)
+            ->where('attendance_day_id', $attendanceDay->id)   // ← work_date ではなく id
+            ->where('status', 'pending')
             ->exists();
 
-        if (!$exists) {
-            CorrectionRequest::create([
-                'requested_by'      => $userId,
-                'attendance_day_id' => $attendance->id,
-                'status'            => 'pending',
-                'note'              => $request->input('note'),
-            ]);
+        if ($alreadyPending) {
+            return back()
+                ->with('error', '承認待ちのため修正はできません。')
+                ->withInput();
         }
 
+        // 以降、before/after payload 作成はそのまま
+        $before = [ /* ... */];
+        $after  = [ /* ... */];
+
+        $correction = new CorrectionRequest();
+        $correction->attendance_day_id = $attendanceDay->id;
+        $correction->requested_by      = $user->id;
+        $correction->status            = 'pending';
+        $correction->before_payload    = json_encode($before);
+        $correction->after_payload     = json_encode($after);
+        $correction->save();
+
         return redirect()
-            ->route('attendance.detail', ['date' => $date])
-            ->with('flash', '修正申請を送信しました。（承認待ち）');
+            ->route('attendance.detail', ['date' => $day->toDateString()])
+            ->with('status', '修正申請を送信しました。');
     }
 }
