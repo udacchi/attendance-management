@@ -132,23 +132,46 @@ class AttendanceController extends Controller
         );
         $attendanceDay->load(['breakPeriods']);
 
-        // 承認待ちロック
+        // ===== 休憩レコードを breaks[] 形式に整形 =====
+        $tbl = 'break_periods';
+        $colStart = Schema::hasColumn($tbl, 'break_start_at') ? 'break_start_at'
+            : (Schema::hasColumn($tbl, 'started_at') ? 'started_at'
+                : (Schema::hasColumn($tbl, 'start_at') ? 'start_at' : null));
+        $colEnd   = Schema::hasColumn($tbl, 'break_end_at') ? 'break_end_at'
+            : (Schema::hasColumn($tbl, 'ended_at') ? 'ended_at'
+                : (Schema::hasColumn($tbl, 'end_at') ? 'end_at' : null));
+
+        $breaks = [];
+
+        if ($colStart && $colEnd) {
+            foreach ($attendanceDay->breakPeriods->sortBy($colStart) as $bp) {
+                $start = $bp->{$colStart} ?? null;
+                $end   = $bp->{$colEnd}   ?? null;
+
+                $breaks[] = [
+                    'start' => $start ? Carbon::parse($start, $tz)->format('H:i') : '',
+                    'end'   => $end   ? Carbon::parse($end,   $tz)->format('H:i') : '',
+                ];
+            }
+        }
+
+        // 末尾に必ず空行を 1 つ追加（常に「もう1件入力欄」を出す）
+        $breaks[] = ['start' => '', 'end' => ''];
+
+        // ===== 承認待ちロック（あなたの既存ロジックをそのまま流用） =====
         $isLocked = $this->hasPendingCorrection($user->id, $date)
             ? (function () use ($user, $date) {
-                $q = \App\Models\CorrectionRequest::query();
+                $q = CorrectionRequest::query();
 
-                // ユーザー列名の自動判定
                 $userCol = Schema::hasColumn('correction_requests', 'requested_user_id') ? 'requested_user_id'
                     : (Schema::hasColumn('correction_requests', 'requested_by') ? 'requested_by'
                         : (Schema::hasColumn('correction_requests', 'user_id') ? 'user_id' : null));
 
-                // 対象日付列名の自動判定
                 $dateCol = Schema::hasColumn('correction_requests', 'work_date') ? 'work_date'
                     : (Schema::hasColumn('correction_requests', 'target_date') ? 'target_date'
                         : (Schema::hasColumn('correction_requests', 'date') ? 'date' : null));
 
                 if (!$userCol || !$dateCol) {
-                    // 列が見つからない場合はロック無効（落とさない）
                     return false;
                 }
 
@@ -163,21 +186,20 @@ class AttendanceController extends Controller
             'user'   => $user,
             'date'   => $date,
             'record' => [
-                'user_id'     => $user->id,
-                'name'        => $user->name,
-                'date'        => $date->toDateString(),
-                'clock_in'    => $attendanceDay->clock_in_at
-                    ? Carbon::parse($attendanceDay->clock_in_at)->format('H:i') : '–',
-                'clock_out'   => $attendanceDay->clock_out_at
-                    ? Carbon::parse($attendanceDay->clock_out_at)->format('H:i') : '–',
-                'break_total' => '–',
-                'work_total'  => '–',
-                'note'        => $attendanceDay->note,
+                'user_id'   => $user->id,
+                'name'      => $user->name,
+                'clock_in'  => $attendanceDay->clock_in_at
+                    ? Carbon::parse($attendanceDay->clock_in_at, $tz)->format('H:i') : '',
+                'clock_out' => $attendanceDay->clock_out_at
+                    ? Carbon::parse($attendanceDay->clock_out_at, $tz)->format('H:i') : '',
+                'note'      => $attendanceDay->note,
+                'breaks'    => $breaks,
             ],
             'attendanceDay' => $attendanceDay,
-            'isLocked'      => $isLocked, // ★ 画面側で入力無効・メッセージ表示に使用（FN038）
+            'isLocked'      => $isLocked,
         ]);
     }
+
 
     // 編集フォーム（user+date ベース）
     public function editByUserDate(Request $request, User $user)
@@ -410,7 +432,7 @@ class AttendanceController extends Controller
 
 
         // 2) 月内の実データを取得（★ work_date で絞る）
-        $records = \App\Models\AttendanceDay::query()
+        $records = AttendanceDay::query()
             ->with('breakPeriods')
             ->where('user_id', $user->id)
             ->whereDate('work_date', '>=', $from->toDateString())
@@ -446,7 +468,7 @@ class AttendanceController extends Controller
     }
 
 
-    public function staffCsv(\Illuminate\Http\Request $request, int $id): StreamedResponse
+    public function staffCsv(Request $request, int $id): StreamedResponse
     {
         $tz    = config('app.timezone', 'Asia/Tokyo');
         $month = $request->query('month')
@@ -500,7 +522,7 @@ class AttendanceController extends Controller
     private function hasPendingCorrection(int $userId, Carbon $date): bool
     {
         // モデル・テーブルが無ければロックなしで進める
-        if (!class_exists(\App\Models\CorrectionRequest::class)) return false;
+        if (!class_exists(CorrectionRequest::class)) return false;
         if (!Schema::hasTable('correction_requests')) return false;
 
         $tbl = 'correction_requests';

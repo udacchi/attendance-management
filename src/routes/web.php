@@ -117,6 +117,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
     Route::get('/attendance/{id}', [AdminAttendanceController::class, 'detailByUserDate'])->whereNumber('id')
         ->name('attendance.detail');
 
+    Route::post('/attendance/{user}/update', [AdminAttendanceController::class, 'updateByUserDate'])->whereNumber('id')
+        ->name('attendance.updateByUserDate');
+
     // スタッフ一覧
     Route::get('/staff/list', [AdminStaffController::class, 'index'])->name('staff.list');
 

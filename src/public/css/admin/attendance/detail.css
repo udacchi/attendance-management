@@ -12,10 +12,10 @@
 body{ background:var(--canvas); }
 
 /* 外枠キャンバス */
-.admin-attendance-detail{
+.att-detail{
   padding: 32px 16px 64px;
 }
-.admin-attendance-detail__inner{
+.att-detail__inner{
   background:var(--canvas);
   width:min(1040px, 100%);
   margin:0 auto;
