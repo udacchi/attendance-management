@@ -23,28 +23,24 @@ class LoginController extends Controller
     // 管理者ログイン送信（POST）
     public function store(LoginRequest $request)
     {
-        $credentials = $request->only('email', 'password');
+        $credentials = [
+            'email'    => $request->input('email'),
+            'password' => $request->input('password'),
+            // ★ ここを、usersテーブルの実際の値に合わせる
+            'role'     => 'admin',   // 例：role カラムに 'admin' が入っている場合
+        ];
 
         if (Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // ← 当日の勤怠一覧へ
             $today = Carbon::now(config('app.timezone', 'Asia/Tokyo'))->toDateString();
 
-            // 念のためロール確認（users表でrole管理している前提）
-            $user = Auth::guard('admin')->user();
-            if (($user->role ?? null) !== 'admin') {
-                Auth::guard('admin')->logout();
-                return back()->withErrors([
-                    'email' => 'ログイン情報が登録されていません',
-                ])->onlyInput('email');
-            }
-
-            // 直アクセス時は intended へ、なければ index へ
-            return redirect()->intended(route('admin.attendance.list', ['date' => $today]));
+            return redirect()->intended(
+                route('admin.attendance.list', ['date' => $today])
+            );
         }
 
-        // 認証失敗
+        // 認証失敗（メール/パスワード/roleが合わない）
         return back()->withErrors([
             'email' => 'ログイン情報が登録されていません',
         ])->onlyInput('email');
