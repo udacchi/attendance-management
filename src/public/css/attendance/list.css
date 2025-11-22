@@ -1,40 +1,37 @@
 :root{
-  --canvas:#efeff3;
-  --panel:#fff;
-  --text:#1a1a1a;
-  --muted:#666;
-  --border:#e6e6eb;
-  --border-strong:#dcdce2;
-  --chip:#f4f4f7;
+  --canvas: #efefef;
+  --panel: #ffffff;
+  --text1: #000000;
+  --text2: #737373;
+  --border: #E1E1E1;
 }
 
 body { background: var(--canvas); }
 
 /* キャンバス */
-.user-attendance{ padding:32px 16px 64px; }
-.user-attendance__inner{
-  background:var(--canvas);
-  width:min(1040px, 100%);
-  margin:0 auto;
-  padding:36px 32px 56px;
-  box-shadow:var(--shadow);
+.user-att{ padding: 32px 16px 64px; }
+.user-att__inner{
+  background: var(--canvas);
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  padding: 36px 32px 56px;
 }
 
 /* タイトル（左の縦線アクセント） */
 .page-title{
-  position:relative;
-  margin:8px 0 20px;
-  font-size:30px;
-  font-weight:700;
-  color:var(--text);
+  position: relative;
+  margin: 8px 0 20px;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text1);
 }
 .page-title::before{
-  content:"";
-  position:absolute;
-  left:-28px; top:4px;
-  width:8px; height:40px;
-  background:#111;
-  border-radius:2px;
+  content: "";
+  position: absolute;
+  left: -28px; top: 4px;
+  width: 8px; height: 40px;
+  background: #000000;
+  border-radius: 2px;
 }
 
 /* ===== 月ナビ（ピル型・中央強調） ===== */
@@ -60,12 +57,11 @@ body { background: var(--canvas); }
   padding: 8px 10px;
   border-radius: 10px;
   text-decoration: none;
-  color: #8a8a8a;
+  color: var(--text2);
   font-weight: 700;
   font-size: 16px;
 }
 .month-nav__btn--right{ justify-self: end; }
-.month-nav__btn:hover{ color:#5a5a5a; }
 .month-nav__arrow{ font-size: 16px; line-height: 1; }
 
 /* 中央：アイコン */
@@ -80,14 +76,14 @@ body { background: var(--canvas); }
 .month-nav__icon{
   font-size: 16px;
   line-height: 1;
-  color: #555;
+  color: var(--text2);
   cursor: pointer;
 }
 .month-nav__display{
   font-weight: 700;
   font-size: 20px;
   letter-spacing: .3px;
-  color: #222;
+  color: var(--text1);
   cursor: pointer;
   user-select: none;
 }
@@ -105,49 +101,43 @@ body { background: var(--canvas); }
 
 
 /* テーブル */
-.attendance-table__wrap{
-  width:min(920px, 100%);
-  margin:16px auto 0;
+.att-table__wrap{
+  width: min(900px, 100%);
+  margin: 16px auto 0;
 }
-.attendance-table{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  background:var(--panel);
-  border-radius:10px;
-  overflow:hidden;
+.att-table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--panel);
+  border-radius: 10px;
+  overflow: hidden;
   font-variant-numeric: tabular-nums;
 }
-.attendance-table thead th{
-  background:#fff;
-  color:#333;
-  text-align:left;
-  font-weight:700;
-  font-size:16px;
-  padding:14px 18px;
-  border-bottom:2px solid var(--border-strong);
+.att-table thead th{
+  background: var(--panel);
+  color: var(--text2);
+  text-align: left;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 18px;
+  border-bottom: 3px solid var(--border);
 }
-.attendance-table tbody td{
-  padding:14px 18px;
-  border-bottom:1px solid var(--border);
-  font-size:16px;
-  color:#222;
+.att-table tbody td{
+  padding: 14px 18px;
+  border-bottom: 2px solid var(--border);
+  font-size: 16px;
+  color: var(--text2);
 }
-.attendance-table tbody tr:last-child td{ border-bottom:none; }
+.att-table tbody tr:last-child td{ border-bottom: none; }
 
-.cell--date{ width:28%; letter-spacing:.02em; }
-.cell--time{ width:12%; letter-spacing:.04em; }
-.cell--link{ width:10%; }
+.cell--date{ width: 28%; letter-spacing: .02em; }
+.cell--time{ width: 12%; letter-spacing: .04em; }
+.cell--link{ width: 10%; }
 
 .detail-link{
-  color:#111;
-  font-weight:700;
-  text-decoration:none;
+  color: var(--text1);
+  font-weight: 700;
+  text-decoration: none;
 }
-.detail-link:hover{ text-decoration:underline; }
-
-.cell--empty{
-  text-align:center;
-  color:var(--muted);
-  padding:28px 12px;
-}
+.detail-link:hover{ text-decoration: underline; }

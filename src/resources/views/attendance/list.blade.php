@@ -21,8 +21,8 @@
   $nextMonth = $month->copy()->addMonthNoOverflow();
 @endphp
 
-<div class="user-attendance">
-  <div class="user-attendance__inner">
+<div class="user-att">
+  <div class="user-att__inner">
 
     <h1 class="page-title">勤怠一覧</h1>
 
@@ -65,8 +65,8 @@
     </div>
 
     <!-- テーブル -->
-    <div class="attendance-table__wrap">
-      <table class="attendance-table">
+    <div class="att-table__wrap">
+      <table class="att-table">
         <thead>
           <tr>
             <th>日付</th>
@@ -82,10 +82,10 @@
             @php $dCarbon = \Carbon\Carbon::parse($d['date']); @endphp
             <tr>
               <td class="cell--date">{{ $dCarbon->isoFormat('MM/DD(ddd)') }}</td>
-              <td class="cell--time">{{ $d['clock_in']   ?? '-' }}</td>
-              <td class="cell--time">{{ $d['clock_out']  ?? '-' }}</td>
-              <td class="cell--time">{{ $d['break_total']?? '-' }}</td>
-              <td class="cell--time">{{ $d['work_total'] ?? '-' }}</td>
+              <td class="cell--time">{{ $d['clock_in']   ?? '' }}</td>
+              <td class="cell--time">{{ $d['clock_out']  ?? '' }}</td>
+              <td class="cell--time">{{ $d['break_total']?? '' }}</td>
+              <td class="cell--time">{{ $d['work_total'] ?? '' }}</td>
               <td class="cell--link">
                 <a class="detail-link"
                    href="{{ route('attendance.detail', ['date' => $dCarbon->toDateString()]) }}">
