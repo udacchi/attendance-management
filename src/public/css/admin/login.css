@@ -1,94 +1,77 @@
 /* 基本トークン */
 :root{
-  --text: #111;
-  --muted: #666;
-  --border: #cfcfcf;
-  --black: #000;
-  --white: #fff;
-  --form-width: 680px;
+  --canvas: #ffffff;
+  --panel: #ffffff;
+  --text: #000000;
+  --border: #000000;
 }
 
-/* ページ全体を白、余白だけ確保 */
-html,body{ height: 100%; }
-html,body{
-  margin: 0; padding: 0;
-  font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","BIZ UDPGothic",Meiryo,sans-serif;
-  background: #fff; color: var(--text);
-}
-
-/* コンテナ（パネル感は出さない） */
+/* コンテナ */
 .admin-login{
   padding: 72px 16px 120px;
 }
 .admin-login__panel{
-  width: min(860px,100%);
-  margin: 0 auto;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
+  width: min(1040px,100%);
+  margin: 24px auto 0;
+  background: var(--panel);
+  padding: 72px 32px 88px;
 }
 
 /* タイトル */
 .admin-login__title{
-  margin: 56px 0 28px;
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.25;
+  margin: 0 0 40px;
   text-align: center;
+  font-size: 36px;
+  font-weight: 700;
   color: var(--text);
 }
 
-/* フォーム：入力行幅＝ボタン幅 */
-.admin-login__form{
-  width: min(var(--form-width),100%);
-  margin: 0 auto;
-}
+/* フォーム入力 */
+.admin-login__form{ width: min(680px,100%); margin: 0 auto; }
 
-.form-group{ margin-top: 24px; }
+.form-group{ margin-top: 60px; }
 .form-group:first-of-type{ margin-top: 0; }
 
 .form-label{
   display: block;
-  margin: 0 0 10px;
-  font-size: 16px;
-  font-weight: 600;
+  margin-bottom: 10px;
+  font-weight: 700;
   color: var(--text);
+  font-size: 24px;
 }
 
 .form-input{
   display: block;
   width: 100%;
-  height: 56px;
+  height: 60px;
   padding: 12px 14px;
   font-size: 16px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--white);
+  border-radius: 4px;
+  background: var(--panel);
   outline: 0;
-}
-.form-input:focus{
-  border-color: #999;
-  box-shadow: 0 0 0 3px rgba(0,0,0,.06);
 }
 
 .form-error{
   margin-top: 8px;
   font-size: 14px;
-  color: #c62828;
+  color: #ff0000;
 }
 
-/* ボタン（フォーム幅いっぱい） */
+/* 送信ボタン */
 .admin-login__button{
   display: block;
   width: 100%;
-  height: 54px;
-  margin: 28px auto 0;
+  height: 60px;
+  margin: 100px auto 0;
   border: none;
-  border-radius: 6px;
-  background: var(--black);
-  color: var(--white);
-  font-size: 16px;
+  border-radius: 5px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 26px;
   font-weight: 700;
   cursor: pointer;
+  transition: opacity .15s ease;
 }
+
 .admin-login__button:hover{ opacity: .9; }
