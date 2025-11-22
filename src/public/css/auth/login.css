@@ -1,19 +1,16 @@
 :root {
-  --text: #111;
-  --muted: #666;
-  --border: #cfcfcf;
-  --black: #000;
-  --white: #fff;
-  --form-width: 680px;
+  --canvas: #ffffff;
+  --panel: #ffffff;
+  --text: #000000;
+  --border: #000000;
 }
 
 .user-login { padding: 32px 16px 64px; }
 
 .usre-login__panel {
-  width: min(960px,100%);
+  width: min(1040px,100%);
   margin: 24px auto 0;
   background: var(--panel);
-  box-shadow: var(--shadow);
   padding: 72px 32px 88px;
 }
 
@@ -46,45 +43,41 @@
   font-size: 16px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: #fff;
+  background: var(--panel);
   outline: 0;
-}
-
-.form-input:focus {
-  border-color: #999;
-  box-shadow: 0 0 0 3px rgba(0,0,0,.06);
 }
 
 .form-error {
   margin-top: 8px;
   font-size: 14px;
-  color: #c62828;
+  color: #ff0000;
 }
 
 /* 送信ボタン（黒・中央・幅広） */
 .login-button {
   display: block;
-  width: min(680px,100%);
+  width: 100%;
   height: 60px;
   margin: 100px auto 0;
   border: none;
   border-radius: 5px;
-  background: var(--black);
-  color: var(--white);
+  background: #000000;
+  color: #ffffff;
   font-size: 26px;
   font-weight: 700;
   cursor: pointer;
   transition: opacity .15s ease;
 }
-.login-button:hover { opacity: .9; }
+
+.login-button:hover{ opacity: .9; }
 
 /* 会員登録リンク */
 .login-to-register {
-  margin-top: 14px;
+  margin-top: 24px;
   text-align: center;
 }
 .login-to-register a {
-  color: #0071e3;
+  color: #0073CC;
   text-decoration: none;
   font-size: 20px;
   font-weight: 400;
