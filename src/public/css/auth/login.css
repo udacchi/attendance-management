@@ -5,7 +5,9 @@
   --border: #000000;
 }
 
-.user-login { padding: 32px 16px 64px; }
+.user-login{
+  padding: 72px 16px 120px;
+}
 
 .usre-login__panel {
   width: min(1040px,100%);
