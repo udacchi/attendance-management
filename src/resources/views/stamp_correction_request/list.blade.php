@@ -53,11 +53,11 @@
               </td>
               <td class="cell--name">{{ $row->user_name ?? '' }}</td>
               <td class="cell--datetime">
-                {{ $tgt ? $tgt->isoFormat('YYYY/MM/DD') : '-' }}
+                {{ $tgt ? $tgt->isoFormat('YYYY/MM/DD') : '' }}
               </td>
               <td class="cell--reason">{{ $row->reason ?? '' }}</td>
               <td class="cell--datetime">
-                {{ $req ? $req->isoFormat('YYYY/MM/DD') : '-' }}
+                {{ $req ? $req->isoFormat('YYYY/MM/DD') : '' }}
               </td>
               <td class="cell--link">
                 @php
