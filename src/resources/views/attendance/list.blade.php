@@ -33,16 +33,30 @@
         <span class="month-nav__arrow">&#8592;</span> 前月
       </a>
 
-      <form class="month-nav__center" action="{{ route('attendance.list') }}" method="get">
-        <i class="month-nav__icon fa-regular fa-calendar"></i>
-        <input
-          class="month-nav__input"
-          type="month"
-          name="month"
-          value="{{ $month->format('Y-m') }}"
-          onchange="this.form.submit()"
-        >
+      <form id="monthNavForm" class="month-nav__center" action="{{ route('attendance.list') }}" method="get">
+        {{-- ▼ カレンダーアイコン（SVGなので確実に表示される） --}}
+        <svg class="month-nav__icon" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm12 7H5v10h14V9ZM7 7h10V6H7v1Z" fill="currentColor"/>
+        </svg>
+      
+        <span id="monthDisplay" class="month-nav__display">{{ $month->format('Y/m') }}</span>
+      
+        <input id="monthPicker" class="month-nav__input" type="month" name="month"
+               value="{{ $month->format('Y-m') }}" onchange="this.form.submit()">
       </form>
+      
+      <script>
+      (() => {
+        const form  = document.getElementById('monthNavForm');
+        const input = document.getElementById('monthPicker');
+        form.addEventListener('click', (e) => {
+          if (e.target.closest('.month-nav__icon') || e.target.closest('.month-nav__display')) {
+            if (typeof input.showPicker === 'function') input.showPicker();
+            else input.focus();
+          }
+        });
+      })();
+      </script>      
 
       <a class="month-nav__btn month-nav__btn--right"
          href="{{ route('attendance.list', ['month' => $nextMonth->format('Y-m')]) }}">
