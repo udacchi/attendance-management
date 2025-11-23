@@ -1,137 +1,186 @@
 :root{
-  --canvas:#efeff3;
-  --panel:#ffffff;
-  --text:#101010;
-  --muted:#666;
-  --border:#e8e8ee;
-  --border-strong:#e0e0e6;
-  --radius:10px;
-  --black:#000;
-  --white:#fff;
-  --danger:#e85c7a;
+  --canvas: #efefef;
+  --panel: #ffffff;
+  --text1: #000000;
+  --text2: #737373;
+  --muted: #696969;
+  --border: #E1E1E1;
+  --danger: #ff0000;
 }
 
 body { background: var(--canvas); }
 
 /* 外枠キャンバス */
-.att-detail{ padding:32px 16px 64px; }
+.att-detail{ padding: 32px 16px 64px; }
 .att-detail__inner{
-  background:var(--canvas);
-  width:min(1040px,100%);
-  margin:0 auto;
-  padding:36px 32px 56px;
-  box-shadow:var(--shadow);
+  background: var(--canvas);
+  width: min(1120px,100%);
+  margin: 0 auto;
+  padding: 36px 32px 56px;
 }
 
 /* タイトル（左のアクセント線） */
 .page-title{
-  position:relative;
-  margin:8px 0 20px;
-  font-size:22px;
-  font-weight:700;
-  color:var(--text);
+  position: relative;
+  margin: 8px 0 20px;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text);
 }
 .page-title::before{
-  content:"";
-  position:absolute;
-  left:-16px; top:2px;
-  width:4px; height:24px;
-  background:#111;
-  border-radius:2px;
+  content: "";
+  position: absolute;
+  left: -28px; top: 4px;
+  width: 8px; height: 40px;
+  background: #000000;
+  border-radius: 2px;
 }
 
 /* 詳細カード */
 .detail-card{
-  width:min(760px,100%);
-  margin:0 auto;
-  background:var(--panel);
-  border-radius:var(--radius);
-  overflow:hidden;
-  box-shadow:0 1px 0 rgba(0,0,0,.03);
+  width: min(900px,100%);
+  margin: 60px auto 20px;
+  background: var(--panel);
+  border-radius: 10px;
+  overflow: hidden;
 }
 .detail-table{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  color:var(--text);
-  font-variant-numeric:tabular-nums;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 .detail-table th,
 .detail-table td{
-  padding:16px 18px;
-  border-bottom:1px solid var(--border);
-  font-size:14px;
+  padding: 24px 36px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
 }
 .detail-table tr:last-child th,
 .detail-table tr:last-child td{ border-bottom:none; }
 .detail-table th{
-  width:26%;
-  text-align:left;
-  background:#f7f7fa;
-  font-weight:700;
-  color:#333;
+  width: 26%;
+  padding-left: 80pX;
+  background: var(--panel);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text2);
 }
-.cell--center{ text-align:center; }
-.cell--ym{ width:19%; }
-.cell--md{ width:55%; }
-.cell--inputs{ white-space:nowrap; }
+.cell--center{ 
+  text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text1);
+}
+
+.cell--ym{ width: 19%; }
+.cell--md{ width: 55%; }
+.cell--inputs{ white-space: nowrap; }
 .cell--tilde{
-  width:6%;
-  text-align:center;
-  color:#333;
-  letter-spacing:.08em;
+  width: 6%;
+  text-align: center;
+  letter-spacing: .08em;
 }
 
 /* チップ風の入力（閲覧専用） */
 .chip-input{
-  min-width:120px;
-  height:36px;
-  padding:8px 10px;
-  border:1px solid var(--border-strong);
-  border-radius:8px;
-  background:#f6f6f8;
-  color:#111;
-  font-size:14px;
+  min-width: 120px;
+  height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--text1);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
 }
-.chip-input:disabled{ opacity:1; }
+.chip-input:disabled{ opacity: 1; }
 
 .note-box{
-  width:100%;
-  min-height:56px;
-  padding:10px 12px;
-  border:1px solid var(--border-strong);
-  border-radius:8px;
-  background:#f6f6f8;
-  resize:vertical;
+  min-width: 400px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid #D9D9D9;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--text1);
+  font-size: 14px;
+  font-weight: 700;
+  resize: vertical;
 }
 
 /* 操作ボタン（右下） */
 .detail-actions{
-  width:min(760px,100%);
-  margin:18px auto 0;
-  display:flex;
-  justify-content:flex-end;
+  width: min(900px,100%);
+  margin: 18px auto 0;
+  display: flex;
+  justify-content: flex-end;
 }
 .btn-primary{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  height:44px;
-  padding:0 28px;
-  border-radius:8px;
-  background:var(--black);
-  color:var(--white);
-  font-weight:700;
-  text-decoration:none;
-  transition:opacity .15s ease;
+  width: 130px;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 28px;
+  border-radius: 5px;
+  background: #000000;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 22px;
+  text-decoration: none;
+  transition: opacity .15s ease;
 }
-.btn-primary:hover{ opacity:.9; }
+.btn-primary:hover{ opacity: .9; }
 
 /* 承認待ちの注記 */
 .pending-note{
-  width:min(760px,100%);
-  margin:12px auto 0;
-  color:var(--danger);
-  font-size:13px;
+  width: min(900px,100%);
+  margin: 12px auto 0;
+  color: #ff000080;
+  font-size:18px;
+  font-weight: 800;
   text-align:right;
 }
+
+/* 時刻入力の時計アイコンを消す */
+.detail-table input[type="time"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: textfield; /* Firefox */
+  background: none;
+}
+
+.detail-table input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* 承認待ち（is-pending）時に枠だけ消す */
+.is-pending .chip-input,
+.is-pending input[type="time"],
+.is-pending textarea.note-box {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+
+  color: var(--text1) !important;  /* ←文字色は必ず表示 */
+  opacity: 1 !important;           /* ←透明などを防止 */
+}
+
+/* Safari/Chrome の時間入力内部構造を壊しすぎない */
+.is-pending input[type="time"]::-webkit-inner-spin-button,
+.is-pending input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none !important; /* アイコンだけ消す */
+}
+
+/* これを消すと文字も消えるので消してはいけない（注意） */
+/*
+.is-pending input[type="time"]::-webkit-datetime-edit {
+  display: none;
+}
+*/
+
+
