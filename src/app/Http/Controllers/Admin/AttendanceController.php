@@ -47,53 +47,69 @@ class AttendanceController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // ▼ 3) その1日分を Blade の $records 形式に整形
+        // ▼ 3) 1日分の表示用データを「全ユーザー基準」で組み立て（未打刻も表示）
         $fmtTime = function ($v) {
-            if (empty($v)) return '–';
+            if (empty($v)) return null;
             if ($v instanceof \DateTimeInterface) return $v->format('H:i');
             if (is_string($v) && preg_match('/^\d{1,2}:\d{2}/', $v)) return substr($v, 0, 5);
             try {
-                return Carbon::parse($v)->format('H:i');
+                return \Carbon\Carbon::parse($v)->format('H:i');
             } catch (\Throwable $e) {
-                return '–';
+                return null;
             }
         };
-
         $minutesToHMM = function ($mins) {
-            if ($mins === null) return '–';
-            $h = intdiv((int)$mins, 60);
-            $m = ((int)$mins) % 60;
-            return sprintf('%d:%02d', $h, $m);
+            if ($mins === null) return null;
+            $mins = (int)$mins;
+            return sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
         };
 
-        $dayItems = AttendanceDay::query()
+        // その日の勤怠を user_id=>AttendanceDay に引けるように
+        $attByUser = AttendanceDay::query()
             ->when($userId, fn($q) => $q->where('user_id', $userId))
             ->whereDate('work_date', $date->toDateString())
-            ->with('user:id,name')
-            ->orderBy('user_id')
-            ->get();
+            ->get()
+            ->keyBy('user_id');
 
-        $records = $dayItems->map(function ($a) use ($fmtTime, $minutesToHMM) {
+        // 一覧に出したいユーザー（例：role='user' を想定。不要なら削除）
+        $users = User::query()
+            ->when($userId, fn($q) => $q->where('id', $userId))
+            ->when(Schema::hasColumn('users', 'role'), fn($q) => $q->where('role', 'user'))
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-            // ★ 出勤・退勤どちらか1つでも入っていれば「打刻あり」とみなす
-            $hasStamp = ($a->clock_in_at !== null) || ($a->clock_out_at !== null);
+        $records = $users->map(function ($u) use ($attByUser, $fmtTime, $minutesToHMM) {
+            $a = $attByUser->get($u->id);
+
+            // 勤怠が無い人は全部 null（→ Blade の ?? '' で空欄）
+            if (!$a) {
+                return [
+                    'id'          => null,
+                    'user_id'     => $u->id,
+                    'name'        => $u->name,
+                    'clock_in'    => null,
+                    'clock_out'   => null,
+                    'break_total' => null,
+                    'work_total'  => null,
+                ];
+            }
+
+            // カラム名の違いに両対応（total_* が無い場合のフォールバック）
+            $breakMin = $a->total_break_minutes ?? $a->break_minutes ?? null;
+            $workMin  = $a->total_work_minutes  ?? $a->work_minutes  ?? null;
 
             return [
                 'id'          => $a->id,
-                'user_id'     => $a->user_id,
-                'name'        => optional($a->user)->name ?? '—',
+                'user_id'     => $u->id,
+                'name'        => $u->name,
                 'clock_in'    => $fmtTime($a->clock_in_at),
                 'clock_out'   => $fmtTime($a->clock_out_at),
-
-                // ★ 両方とも未打刻のときは休憩を「－」固定
-                'break_total' => $hasStamp ? $minutesToHMM($a->break_minutes) : '–',
-
-                // 合計はこれまで通りアクセサ経由（未打刻なら null → minutesToHMM で "–"）
-                'work_total'  => $minutesToHMM($a->work_minutes),
+                // 勤怠がある人は 0 分でも "0:00" を出したいなら null 合体で 0 を入れる
+                'break_total' => $minutesToHMM($breakMin ?? 0),
+                // 実働は null（未計算/未打刻）を許容。0 は "0:00"
+                'work_total'  => is_null($workMin) ? null : $minutesToHMM($workMin),
             ];
         })->values();
-
-
 
         $users = User::query()->select('id', 'name')->orderBy('name')->get();
 
