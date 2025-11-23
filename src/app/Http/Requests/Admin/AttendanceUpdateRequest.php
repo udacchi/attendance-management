@@ -15,13 +15,13 @@ class AdminAttendanceUpdateRequest extends FormRequest
     public function rules()
     {
         return [
-            'clock_in'      => ['nullable', 'date_format:H:i'],
-            'clock_out'     => ['nullable', 'date_format:H:i'],
-            'break1_start'  => ['nullable', 'date_format:H:i'],
-            'break1_end'    => ['nullable', 'date_format:H:i'],
-            'break2_start'  => ['nullable', 'date_format:H:i'],
-            'break2_end'    => ['nullable', 'date_format:H:i'],
-            'note'          => ['required', 'string', 'max:1000'], // 4) 備考必須
+            'clock_in'      => 'nullable|date_format:H:i',
+            'clock_out'     => 'nullable|date_format:H:i',
+            'break1_start'  => 'nullable|date_format:H:i',
+            'break1_end'    => 'nullable|date_format:H:i',
+            'break2_start'  => 'nullable|date_format:H:i',
+            'break2_end'    => 'nullable|date_format:H:i',
+            'note'          => 'required|string|max:255', 
         ];
     }
 
