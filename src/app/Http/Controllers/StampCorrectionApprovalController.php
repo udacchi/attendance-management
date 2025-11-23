@@ -42,40 +42,80 @@ class StampCorrectionApprovalController extends Controller
      */
     public function show(int $attendance_correct_request_id)
     {
-        $req = CorrectionRequest::with(['user:id,name', 'attendanceDay'])->findOrFail($attendance_correct_request_id);
+        $req = CorrectionRequest::with(['user:id,name', 'attendanceDay'])
+            ->findOrFail($attendance_correct_request_id);
 
-        $tz   = config('app.timezone', 'Asia/Tokyo');
+        $tz = config('app.timezone', 'Asia/Tokyo');
+
+        // 表示基準日
         $date = $req->target_at
             ? Carbon::parse($req->target_at, $tz)
-            : optional($req->attendanceDay?->work_date ? Carbon::parse($req->attendanceDay->work_date, $tz) : null);
+            : ($req->attendanceDay && $req->attendanceDay->work_date
+                ? Carbon::parse($req->attendanceDay->work_date, $tz)
+                : Carbon::now($tz));
 
-        // 表示用（存在すれば new_* を優先 → 元の値 → 勤怠実績）
+        // ステータス用フラグ
+        $status     = $req->status ?? null;
+        $isPending  = ($status === 'pending');
+        $isApproved = ($status === 'approved');
+
+        // ヘルパ
         $pick = function (...$c) {
-            foreach ($c as $v) if ($v !== null && $v !== '') return $v;
+            foreach ($c as $v) {
+                if ($v !== null && $v !== '') return $v;
+            }
             return null;
         };
-        $hm   = function ($v) use ($tz) {
-            if (empty($v)) return '-';
+        $hm = function ($v) use ($tz) {
+            if (empty($v)) return '';
             try {
                 return Carbon::parse($v, $tz)->format('H:i');
             } catch (\Throwable $e) {
-                return $v;
+                return '';
             }
         };
 
         $a = $req->attendanceDay;
+
+        // 休憩
+        $breaks = [
+            [
+                'start' => $hm($pick($req->new_break1_start, $req->break1_start)),
+                'end'   => $hm($pick($req->new_break1_end,   $req->break1_end)),
+            ],
+            [
+                'start' => $hm($pick($req->new_break2_start, $req->break2_start)),
+                'end'   => $hm($pick($req->new_break2_end,   $req->break2_end)),
+            ],
+        ];
+        // まったく入力が無い場合でも1行は出す
+        if (
+            empty($breaks[0]['start']) && empty($breaks[0]['end']) &&
+            empty($breaks[1]['start']) && empty($breaks[1]['end'])
+        ) {
+            $breaks[] = ['start' => '', 'end' => ''];
+        }
+
+        // 画面表示用データ
         $record = [
-            'clock_in'     => $hm($pick($req->new_clock_in,     $req->clock_in,     optional($a)->clock_in_at)),
-            'clock_out'    => $hm($pick($req->new_clock_out,    $req->clock_out,    optional($a)->clock_out_at)),
-            'break1_start' => $hm($pick($req->new_break1_start, $req->break1_start)),
-            'break1_end'   => $hm($pick($req->new_break1_end,   $req->break1_end)),
-            'break2_start' => $hm($pick($req->new_break2_start, $req->break2_start)),
-            'break2_end'   => $hm($pick($req->new_break2_end,   $req->break2_end)),
+            'name'         => optional($req->user)->name,
+            'clock_in'     => $hm($pick($req->new_clock_in,  $req->clock_in,  optional($a)->clock_in_at)),
+            'clock_out'    => $hm($pick($req->new_clock_out, $req->clock_out, optional($a)->clock_out_at)),
             'note'         => $pick($req->note, $req->reason),
+            'breaks'       => $breaks,
         ];
 
-        return view('stamp_correction_request.approve', compact('req', 'date', 'record'));
+        return view('stamp_correction_request.approve', [
+            'req'         => $req,
+            'date'        => $date,
+            'record'      => $record,
+            'isPending'   => $isPending,
+            'isApproved'  => $isApproved,
+            // 'isRejected' => $isRejected,
+        ]);
     }
+
+
 
     /** 承認実行（POST） */
     public function approve(Request $request, int $attendance_correct_request_id)
