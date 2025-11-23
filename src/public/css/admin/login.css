@@ -11,7 +11,7 @@
   padding: 72px 16px 120px;
 }
 .admin-login__panel{
-  width: min(1040px,100%);
+  width: min(1120px,100%);
   margin: 24px auto 0;
   background: var(--panel);
   padding: 72px 32px 88px;
