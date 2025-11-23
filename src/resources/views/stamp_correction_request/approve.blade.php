@@ -49,47 +49,59 @@
       $fmtDateMD = optional($date)->isoFormat('M月D日') ?? '-';
     @endphp
 
-    <div class="detail-card">
-      <table class="detail-table">
+    <div class="approve-card">
+      <table class="approve-table">
         <tbody>
+          {{-- 名前 --}}
           <tr>
             <th>名前</th>
-            <td colspan="3" class="cell--center">
-              {{ optional($req->user)->name ?? ($req->name ?? '-') }}
-            </td>
+            <td colspan="3" class="cell--center">{{ $record['name'] ?? '' }}</td>
           </tr>
-
+    
+          {{-- 日付 --}}
           <tr>
             <th>日付</th>
-            <td class="cell--center cell--ym">{{ $fmtDateY }}</td>
-            <td class="cell--center cell--md" colspan="2">{{ $fmtDateMD }}</td>
+            <td class="cell--center cell--ym">{{ $date->isoFormat('YYYY年') }}</td>
+            <td class="cell--center cell--md" colspan="2">{{ $date->isoFormat('M月D日') }}</td>
           </tr>
-
+    
+          {{-- 出勤・退勤（← 承認待ちでも送信したい将来に備えるなら disabled→readonly に） --}}
           <tr>
             <th>出勤・退勤</th>
-            <td class="cell--inputs"><span class="chip">{{ $record['clock_in']  ?? '-' }}</span></td>
+            <td class="cell--inputs">
+              <input class="chip-input" type="time" name="clock_in"
+                     value="{{ old('clock_in', $record['clock_in'] ?? '') }}" {{ $isPending ? 'readonly' : 'readonly' }}>
+            </td>
             <td class="cell--tilde">〜</td>
-            <td class="cell--inputs"><span class="chip">{{ $record['clock_out'] ?? '-' }}</span></td>
+            <td class="cell--inputs">
+              <input class="chip-input" type="time" name="clock_out"
+                     value="{{ old('clock_out', $record['clock_out'] ?? '') }}" {{ $isPending ? 'readonly' : 'readonly' }}>
+            </td>
           </tr>
-
-          <tr>
-            <th>休憩</th>
-            <td class="cell--inputs"><span class="chip">{{ $record['break1_start'] ?? '-' }}</span></td>
-            <td class="cell--tilde">〜</td>
-            <td class="cell--inputs"><span class="chip">{{ $record['break1_end'] ?? '-' }}</span></td>
-          </tr>
-
-          <tr>
-            <th>休憩2</th>
-            <td class="cell--inputs"><span class="chip">{{ $record['break2_start'] ?? '-' }}</span></td>
-            <td class="cell--tilde">〜</td>
-            <td class="cell--inputs"><span class="chip">{{ $record['break2_end'] ?? '-' }}</span></td>
-          </tr>
-
+          
+          {{-- 休憩 --}}
+          @foreach (($record['breaks'] ?? []) as $idx => $b)
+            <tr>
+              <th class="cell">休憩{{ $idx + 1 }}</th>
+              <td class="cell--inputs">
+                <input class="chip-input" type="time" name="breaks[{{ $idx }}][start]"
+                       value="{{ old("breaks.$idx.start", $b['start'] ?? '') }}"
+                       {{ ($isPending ?? false) ? 'readonly' : 'readonly' }}>
+              </td>
+              <td class="cell--tilde">〜</td>
+              <td class="cell--inputs">
+                <input class="chip-input" type="time" name="breaks[{{ $idx }}][end]"
+                       value="{{ old("breaks.$idx.end", $b['end'] ?? '') }}"
+                       {{ ($isPending ?? false) ? 'readonly' : 'readonly' }}>
+              </td>
+            </tr>
+          @endforeach
+    
+          {{-- 備考 --}}
           <tr>
             <th>備考</th>
             <td colspan="3" class="cell--inputs">
-              <div class="note-box">{{ $record['note'] ?? '' }}</div>
+              <textarea class="note-box" name="note" rows="2" {{ $isPending ? 'readonly' : '' }}>{{ old('note', $record['note'] ?? '') }}</textarea>
             </td>
           </tr>
         </tbody>

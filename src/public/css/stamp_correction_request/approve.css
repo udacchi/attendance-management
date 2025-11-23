@@ -1,164 +1,168 @@
 :root{
-  --canvas:#efeff3;
-  --panel:#ffffff;
-  --text:#101010;
-  --muted:#666;
-  --border:#e8e8ee;
-  --border-strong:#e0e0e6;
-  --radius:10px;
-  --black:#000;
-  --white:#fff;
+  --canvas: #efefef;
+  --panel: #ffffff;
+  --text1: #000000;
+  --text2: #737373;
+  --muted: #696969;
+  --border: #E1E1E1;
 }
 
 body { background: var(--canvas); }
 
 /* 外枠キャンバス */
-.approve-page{ padding:32px 16px 64px; }
+.approve-page{ padding: 32px 16px 64px; }
 .approve-page__inner{
-  background:var(--canvas);
-  width:min(1120px,100%);
-  margin:0 auto;
-  padding:36px 32px 56px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;      /* 中央寄せ */
+  background: var(--canvas);
+  width: min(1120px,100%);
+  margin: 0 auto;
+  padding: 36px 32px 56px;
 }
 
-/* タイトル幅はカードに合わせて中央に */
+/* タイトル（左のアクセント線） */
 .page-title{
-  width:min(1120px, 100%);
-  margin:8px auto 20px;
-  position:relative;
-  font-size:22px;
-  font-weight:700;
-  color:var(--text);
+  position: relative;
+  margin: 8px 0 20px;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text1);
 }
 .page-title::before{
-  content:"";
-  position:absolute;
-  left:-16px; top:2px;
-  width:4px; height:24px;
-  background:#111;
-  border-radius:2px;
+  content: "";
+  position: absolute;
+  left: -28px; top: 4px;
+  width: 8px; height: 40px;
+  background: #000000;
+  border-radius: 2px;
 }
 
-/* 詳細カード：角丸＆影をほんのり、余白広め */
-.detail-card{
-  width:min(1120px,100%);
-  margin:0 auto;
-  background:var(--panel);
-  border-radius:18px;                 /* 角丸を強めに */
-  overflow:hidden;
-  box-shadow:0 6px 18px rgba(0,0,0,.06);
+/* 申請カード */
+.approve-card{
+  width: min(900px,100%);
+  margin: 60px auto 20px;
+  background: var(--panel);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-/* テーブル：行を大きく、区切りは薄く、数値は中央 */
-.detail-table{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  color:var(--text);
-  font-variant-numeric:tabular-nums;
-}
-.detail-table th,
-.detail-table td{
-  padding:28px 28px;                 /* 行の高さアップ */
-  border-bottom:1px solid #f0f0f4;   /* ごく薄い区切り線 */
-  font-size:16px;                    /* 少し大きく */
-  vertical-align:left;
-}
-.detail-table tr:last-child th,
-.detail-table tr:last-child td{ border-bottom:none; }
-
-.detail-table tr > td:nth-child(2){
-  padding-left:40px;        /* 好みで 36〜48px で微調整可 */
+.approve-table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-.detail-table tr:last-child > td{
-  padding-left:40px;        /* ③と同値 */
+.approve-table th,
+.approve-table td{
+  padding: 24px 36px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
 }
 
-/* 左見出しセルは薄グレー背景＆やや太字 */
-.detail-table th{
-  width:28%;
-  text-align:left;
-  background:#fafafd;                /* うっすらグレー */
-  font-weight:700;
-  color:#6b6b6b;                     /* 見出しは落ち着いたグレー */
-  letter-spacing:.02em;
+.approve-table tr:last-child th,
+.approve-table tr:last-child td{ border-bottom:none; }
+.approve-table th{
+  width: 26%;
+  padding-left: 80pX;
+  background: var(--panel);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text2);
 }
 
-/* 値側：中央＆やや太めで視線を集める */
-.detail-table td{
-  text-align:left;
-  font-weight:600;                   /* 右スクショのメリハリ感 */
+.cell--center{ 
+  text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text1);
 }
 
-/* 日付の2カラム幅バランス */
-.cell--ym{ width:22%; }              /* 「2025年」側を少し広く */
-.cell--md{ text-align:left; }
-
-/* チルダの見栄え */
+.cell--ym{ width: 19%; }
+.cell--md{ width: 55%; }
+.cell--inputs{ white-space: nowrap; }
 .cell--tilde{
-  width:64px;
-  text-align:left;
-  color:#000;
-  letter-spacing:.12em;              /* ほんの少し広げる */
+  width: 6%;
+  text-align: center;
+  letter-spacing: .08em;
 }
 
 /* “囲い”は消したまま（文字だけ表示） */
-.chip{
-  border:none; background:transparent; box-shadow:none;
-  padding:0; min-width:auto; height:auto;
-  line-height:inherit; color:inherit;
+.chip-input{
+  min-width: 120px;
+  height: 36px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--text1);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
 }
+.chip-input:disabled{ opacity: 1; }
+
 .note-box{
-  border:none; background:transparent; box-shadow:none;
-  padding:0; min-height:0; color:inherit;
+  min-width: 400px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--text1);
+  font-size: 14px;
+  font-weight: 700;
+  resize: vertical;
 }
 
-/* アクション行もカード幅に合わせる */
+/* 操作ボタン */
 .approve-actions{
-  width:min(1120px,100%);
-  margin:26px auto 0;
-  display:flex;
-  justify-content:flex-end;
-  align-items:center;
-  gap:12px;
+  width: min(900px,100%);
+  margin: 18px auto 0;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .btn-primary{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  height:44px;
-  padding:0 28px;
-  border-radius:8px;
-  background:var(--black);
-  color:var(--white);
-  font-weight:700;
-  text-decoration:none;
-  border:none;
-  cursor:pointer;
-  transition:opacity .15s ease;
+  width: 130px;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 28px;
+  border-radius: 5px;
+  background: #000000;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 22px;
+  text-decoration: none;
+  transition: opacity .15s ease;
 }
-.btn-primary:hover{ opacity:.9; }
+
+.btn-primary:hover{ opacity: .9; }
+
 
 /* 承認済みバッジ（右スクショの黒いピル） */
 .badge-approved{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  height:40px;
-  padding:0 18px;
-  border-radius:999px;
-  background:var(--black);
-  color:var(--white);
+  width: 130px;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border-radius: 5px;
+  background: var(--muted);
+  color: #ffffff;
   font-weight:700;
+  font-size: 22px;
   letter-spacing:.04em;
   animation: pop .18s ease-out;
 }
-@keyframes pop{
-  0%{ transform:scale(.96); opacity:.0; }
-  100%{ transform:scale(1); opacity:1; }
-}
+
+/* 承認済みのtime入力から時計/スピン等を消す（Safari/Chrome） */
+.chip-input.is-static::-webkit-calendar-picker-indicator { display: none; }
+.chip-input.is-static::-webkit-clear-button { display: none; }
+.chip-input.is-static::-webkit-inner-spin-button { display: none; }
+
+/* 見た目はそのままでクリック不可に（編集できないように） */
+.chip-input.is-static { pointer-events: none; }
+
+/* 予防：iOS Safari などでピッカーが出ないように */
+.chip-input.is-static { -webkit-appearance: none; appearance: none; background: transparent; }
+
