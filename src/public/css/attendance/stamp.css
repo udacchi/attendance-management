@@ -4,118 +4,111 @@
 
 /* カラートークン（必要最低限） */
 :root{
-  --text:#101010;
-  --muted:#7a7a7a;
-  --black:#000;
-  --white:#fff;
+  --text: #000000;
+  --canvas: #efefef;
 }
 
 /* 画面全体は白に（周辺の黒背景は使わない） */
 html, body{
-  margin:0;
-  padding:0;
-  background:#fff;
-  color:var(--text);
+  margin: 0;
+  padding: 0;
+  background: var(--canvas);
+  color: var(--text);
 }
 
 /* レイアウト：コンテンツをフル幅で表示 */
-.attend-page{
-  /* 左右の黒い余白を消したいので左右パディングは 0 */
+.att-page{
   padding:32px 0 64px;
-  background:#fff;
 }
 
 /* パネルを“面”として全面表示（角丸・影なし、中央寄せ解除） */
-.attend-hero{
+.att-hero{
   width:100%;
   max-width:none;
   margin:0;
-  background:#fff;
-  box-shadow:none;
   border-radius:0;
   text-align:center;
   padding:56px 24px 120px;
 }
 
 /* ステータスバッジ */
-.attend-badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  height:28px;
-  padding:0 12px;
-  border-radius:999px;
-  font-size:12px;
+.att-badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  width: 100px;
+  padding: 24px 12px;
+  border-radius:50px;
+  font-size:18px;
   letter-spacing:.06em;
-  margin-top:24px;
+  margin-top:60px;
 }
-.attend-badge--muted{
-  background:#ededf0;
-  color:#3a3a3a;
-  border:1px solid #e3e3e8;
+.att-badge--muted{
+  background: #c8c8c8;
+  color: #696969;
 }
 
 /* 日付・時刻 */
-.attend-date{
-  margin:18px 0 0;
-  font-size:clamp(20px, 2.2vw, 28px);
-  font-weight:700;
-  color:var(--text);
+.att-date{
+  margin: 40px 0 0;
+  font-size: 40px;
+  font-weight: 400;
+  color: var(--text);
 }
-.attend-time{
-  margin:18px 0 28px;
-  font-size:clamp(48px, 8vw, 80px);
-  font-weight:800;
-  letter-spacing:.04em;
-  color:var(--text);
+.att-time{
+  margin: 40px 0 28px;
+  font-size: 80px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--text);
 }
 
 /* アクション */
-.attend-actions{
-  display:flex;
-  gap:24px;
-  justify-content:center;
-  align-items:center;
-  margin-top:10px;
-  flex-wrap:wrap;
+.att-actions{
+  display: flex;
+  gap: 80px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 /* ボタン */
 .btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width:180px;
-  height:56px;
-  padding:0 28px;
-  border-radius:14px;
-  font-size:18px;
-  font-weight:800;
-  letter-spacing:.08em;
-  cursor:pointer;
-  transition:opacity .15s ease, transform .02s ease-in;
-  border:1px solid transparent;
+  margin-top: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 221px;
+  height: 77px;
+  padding: 0 28px;
+  border-radius: 20px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  cursor: pointer;
+  transition: opacity .15s ease, transform .02s ease-in;
 }
 .btn:active{ transform:translateY(1px); }
 .btn.is-loading{ opacity:.7; cursor:default; }
 
 .btn--primary{
-  background:var(--black);
-  color:var(--white);
+  background: #000000;
+  color: #ffffff;
 }
 .btn--primary:hover{ opacity:.92; }
 
 .btn--ghost{
-  background:var(--white);
-  color:#111;
-  border-color:#ddd;
-  box-shadow:0 1px 0 rgba(0,0,0,.04) inset;
+  background: #ffffff;
+  color: #000000;
 }
 .btn--ghost:hover{ opacity:.96; }
 
 /* 退勤済メッセージ */
-.attend-message{
-  margin-top:24px;
-  font-weight:700;
-  color:#2b2b2b;
+.att-message{
+  margin-top: 100px;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
 }

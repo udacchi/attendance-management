@@ -42,8 +42,8 @@
 @endif
 
 @section('content')
-<div class="attend-page">
-  <div class="attend-hero">
+<div class="att-page">
+  <div class="att-hero">
 
     {{-- フラッシュメッセージ --}}
     @if (session('status'))
@@ -63,15 +63,15 @@
         'after'   => ['退勤済',   'muted'],
       ][$state] ?? ['勤務外', 'muted'];
     @endphp
-    <div class="attend-badge attend-badge--{{ $badge[1] }}">{{ $badge[0] }}</div>
+    <div class="att-badge att-badge--{{ $badge[1] }}">{{ $badge[0] }}</div>
 
     {{-- 日付 --}}
-    <p class="attend-date">
+    <p class="att-date">
       {{ $today->isoFormat('YYYY年M月D日(ddd)') }}
     </p>
 
     {{-- 時刻 --}}
-    <p class="attend-time" id="attendTime">{{ $displayTime }}</p>
+    <p class="att-time" id="attendTime">{{ $displayTime }}</p>
 
     {{-- 送信用の単一フォーム（外部フォームの影響を受けない） --}}
     <form id="punchForm" method="POST" action="{{ route('attendance.punch') }}">
@@ -79,7 +79,7 @@
       <input type="hidden" name="action" id="punchAction">
     </form>
     
-    <div class="attend-actions">
+    <div class="att-actions">
       @if ($state === 'before')
         <button type="submit" form="punchForm" class="btn btn--primary" data-action="clock-in">出勤</button>
     
@@ -91,7 +91,7 @@
         <button type="submit" form="punchForm" class="btn btn--ghost"   data-action="break-end">休憩戻り</button>
     
       @else
-        <p class="attend-message">お疲れ様でした。</p>
+        <p class="att-message">お疲れ様でした。</p>
       @endif
     </div>
   </div>
