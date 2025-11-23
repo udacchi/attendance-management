@@ -35,8 +35,25 @@
 
       <form id="monthNavForm" class="month-nav__center" action="{{ route('attendance.list') }}" method="get">
         {{-- ▼ カレンダーアイコン --}}
-        <svg class="month-nav__icon" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm12 7H5v10h14V9ZM7 7h10V6H7v1Z" fill="currentColor"/>
+        <svg class="month-nav__icon" viewBox="0 0 24 24" aria-hidden="true">
+          <!-- 外枠 -->
+          <rect x="3" y="4.5" width="18" height="16" rx="2.5" ry="2.5"
+                fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <!-- 綴じ具 -->
+          <line x1="8" y1="4.5" x2="8" y2="2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="16" y1="4.5" x2="16" y2="2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- 仕切り線 -->
+          <line x1="3" y1="8.5" x2="21" y2="8.5" stroke="currentColor" stroke-width="1.6"/>
+          <!-- マス目（3×2） -->
+          <rect x="5.5"  y="10.5" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="10.5" y="10.5" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="15.5" y="10.5" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="5.5"  y="14.9" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="10.5" y="14.9" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="15.5" y="14.9" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <!-- チェック（2つ） -->
+          <path d="M11.2 12.2l1.0 1.0 2.0-2.0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M6.2 16.6l1.0 1.0 2.0-2.0"  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       
         <span id="monthDisplay" class="month-nav__display">{{ $month->format('Y/m') }}</span>
@@ -78,7 +95,7 @@
           </tr>
         </thead>
         <tbody>
-          @forelse ($days as $d)
+          @foreach ($days as $d)
             @php $dCarbon = \Carbon\Carbon::parse($d['date']); @endphp
             <tr>
               <td class="cell--date">{{ $dCarbon->isoFormat('MM/DD(ddd)') }}</td>
@@ -93,11 +110,7 @@
                 </a>
               </td>
             </tr>
-          @empty
-            <tr>
-              <td colspan="6" class="cell--empty">この月の勤怠はありません</td>
-            </tr>
-          @endforelse
+          @endforeach
         </tbody>
       </table>
     </div>
