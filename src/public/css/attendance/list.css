@@ -41,7 +41,7 @@ body { background: var(--canvas); }
   align-items: center;
   gap: 16px;
 
-  width: min(920px, 100%);
+  width: min(900px, 100%);
   margin: 18px auto 48px;
 
   background: var(--panel);
@@ -73,6 +73,7 @@ body { background: var(--canvas); }
   gap: 10px;
   min-height: 28px;
 }
+
 .month-nav__icon{
   font-size: 16px;
   line-height: 1;
@@ -88,7 +89,6 @@ body { background: var(--canvas); }
   user-select: none;
 }
 
-/* month 入力は見えないけど保持（showPicker 用） */
 .month-nav__input{
   position: absolute;
   inset: 0;

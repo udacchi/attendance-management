@@ -34,7 +34,7 @@
       </a>
 
       <form id="monthNavForm" class="month-nav__center" action="{{ route('attendance.list') }}" method="get">
-        {{-- ▼ カレンダーアイコン（SVGなので確実に表示される） --}}
+        {{-- ▼ カレンダーアイコン --}}
         <svg class="month-nav__icon" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm12 7H5v10h14V9ZM7 7h10V6H7v1Z" fill="currentColor"/>
         </svg>
@@ -56,7 +56,7 @@
           }
         });
       })();
-      </script>      
+      </script>
 
       <a class="month-nav__btn month-nav__btn--right"
          href="{{ route('attendance.list', ['month' => $nextMonth->format('Y-m')]) }}">
