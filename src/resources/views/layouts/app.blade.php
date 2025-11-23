@@ -47,7 +47,7 @@
     {{-- 右：ナビ（必要に応じて出し分け／子ビューから差し替え可能） --}}
     @unless($hideNav)
       @if ($isAdminContext)
-        {{-- 管理者ナビ：子ビューが @section('admin_nav') を用意していれば差し替え、無ければデフォルト --}}
+        {{-- 管理者ナビ： --}}
         @hasSection('admin_nav')
           @yield('admin_nav')
         @else
@@ -66,7 +66,7 @@
           </nav>
         @endif
       @else
-        {{-- 一般ユーザーナビ：子ビューが @section('user_nav') を用意していれば差し替え、無ければデフォルト --}}
+        {{-- 一般ユーザーナビ --}}
         @hasSection('user_nav')
           @yield('user_nav')
         @else
