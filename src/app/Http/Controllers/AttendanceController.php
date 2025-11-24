@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Eloquent\Builder;
+use App\Http\Requests\AttendanceDetailRequest;
 use App\Models\AttendanceDay;
 use App\Models\BreakPeriod;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use App\Models\CorrectionRequest;
-
+use Carbon\Carbon;
 class AttendanceController extends Controller
 {
     /** 打刻画面（GET /attendance/stamp）
@@ -271,12 +271,12 @@ class AttendanceController extends Controller
         // 休憩 +1 行分
         $record['breaks'][] = ['start' => '', 'end' => ''];
 
-        // ---- ★ 承認待ち判定（work_date を使わない）----
+        // ---- ★ 承認待ち判定----
         $attendanceId = $attendance->id ?? null;
 
         if ($attendanceId) {
             $isPending = CorrectionRequest::where('requested_by', $user->id)
-                ->where('attendance_day_id', $attendanceId) // ← ここで紐づけ
+                ->where('attendance_day_id', $attendanceId)
                 ->where('status', 'pending')
                 ->exists();
         } else {
@@ -460,5 +460,80 @@ class AttendanceController extends Controller
                 return;
             }
         }
+    }
+
+    // App\Http\Controllers\AttendanceController 内に追加
+    public function updateByDate(AttendanceDetailRequest $request, string $date)
+    {
+        $user = Auth::guard('web')->user();
+        if (!$user) abort(401);
+
+        $tz   = config('app.timezone', 'Asia/Tokyo');
+        $dayC = Carbon::createFromFormat('Y-m-d', $date, $tz)->startOfDay();
+
+        // 対象日レコード
+        $day = AttendanceDay::firstOrCreate(
+            ['user_id' => $user->id, 'work_date' => $dayC->toDateString()],
+            []
+        );
+
+        // ★ 承認待ちはユーザー更新をブロック（管理者は別で許可）
+        if ($day->id) {
+            $pending = CorrectionRequest::where('requested_by', $user->id)
+                ->where('attendance_day_id', $day->id)
+                ->where('status', 'pending')
+                ->exists();
+            if ($pending) {
+                return back()->with('error', '承認待ちのため修正はできません。')->withInput();
+            }
+        }
+
+        // ---- ここからは保存だけ（バリデーションはFormRequestで済んでいる）----
+        $toDT = fn(?string $hm) => $hm
+            ? Carbon::createFromFormat('Y-m-d H:i', $dayC->toDateString() . ' ' . $hm, $tz)->second(0)
+            : null;
+
+        $in   = $toDT($request->input('clock_in'));   // FormRequestでH:iは検証済み
+        $out  = $toDT($request->input('clock_out'));
+        $norm = $request->normalizedBreaks($dayC);    // ★ FormRequestに用意しておく
+
+        DB::transaction(function () use ($day, $in, $out, $request, $norm, $tz) {
+            // 1) 本体
+            $day->clock_in_at  = $in;
+            $day->clock_out_at = $out;
+            $day->note         = (string)$request->input('note', '');
+            $day->save();
+
+            // 2) 休憩は全削除→差し替え（列名が started_at/ended_at の前提）
+            $day->breaks()->delete();
+            foreach ($norm as [$s, $e]) {
+                $day->breaks()->create([
+                    'started_at' => $s->copy(),
+                    'ended_at'   => $e->copy(),
+                ]);
+            }
+
+            // 3) 合計（秒→分切り捨て）
+            $day->load('breaks');
+            $breakSec = 0;
+            foreach ($day->breaks as $bp) {
+                if ($bp->started_at && $bp->ended_at) {
+                    $s = Carbon::parse($bp->started_at, $tz);
+                    $e = Carbon::parse($bp->ended_at,   $tz);
+                    if ($e->gt($s)) $breakSec += $e->diffInSeconds($s);
+                }
+            }
+
+            $adjOut = $out ? $out->copy() : null;
+            if ($in && $adjOut && $adjOut->lt($in)) $adjOut->addDay(); // 0時跨ぎ
+
+            $workSec = ($in && $adjOut) ? max(0, $adjOut->diffInSeconds($in) - $breakSec) : 0;
+
+            if ($day->isFillable('total_break_minutes')) $day->total_break_minutes = intdiv($breakSec, 60);
+            if ($day->isFillable('total_work_minutes'))  $day->total_work_minutes  = intdiv($workSec, 60);
+            if ($day->isDirty()) $day->save();
+        });
+
+        return back()->with('success', '保存しました。');
     }
 }
