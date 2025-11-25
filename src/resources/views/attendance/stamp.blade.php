@@ -6,7 +6,15 @@
 <link rel="stylesheet" href="{{ asset('css/attendance/stamp.css') }}">
 @endsection
 
-@if ($state === 'after')
+@php
+  $normState = match ($state) {
+    'checkedout', 'checked_out' => 'after',
+    'breaking'                  => 'break',
+    default                     => $state, // before / working / break / after
+  };
+@endphp
+
+@if ($normState === 'after')
   @section('user_nav')
     <nav class="global-nav" aria-label="主ナビゲーション">
       <ul class="global-nav__list">
@@ -55,14 +63,14 @@
 
     {{-- ステータスバッジ --}}
     @php
-      /** $state: before|working|break|after */
       $badge = [
         'before'  => ['勤務外',   'muted'],
         'working' => ['出勤中',   'muted'],
         'break'   => ['休憩中',   'muted'],
         'after'   => ['退勤済',   'muted'],
-      ][$state] ?? ['勤務外', 'muted'];
+      ][$normState] ?? ['勤務外', 'muted'];
     @endphp
+    
     <div class="att-badge att-badge--{{ $badge[1] }}">{{ $badge[0] }}</div>
 
     {{-- 日付 --}}
@@ -73,38 +81,45 @@
     {{-- 時刻 --}}
     <p class="att-time" id="attendTime">{{ $displayTime }}</p>
 
-    {{-- 送信用の単一フォーム（外部フォームの影響を受けない） --}}
+    
+
     <form id="punchForm" method="POST" action="{{ route('attendance.punch') }}">
       @csrf
-      <input type="hidden" name="action" id="punchAction">
     </form>
     
     <div class="att-actions">
       @if ($state === 'before')
-        <button type="submit" form="punchForm" class="btn btn--primary" data-action="clock-in">出勤</button>
+        <button type="submit" form="punchForm" name="action" value="clock-in"  class="btn btn--primary">出勤</button>
     
       @elseif ($state === 'working')
-        <button type="submit" form="punchForm" class="btn btn--primary" data-action="clock-out">退勤</button>
-        <button type="submit" form="punchForm" class="btn btn--ghost"   data-action="break-start">休憩入り</button>
+        <button type="submit" form="punchForm" name="action" value="clock-out"   class="btn btn--primary">退勤</button>
+        <button type="submit" form="punchForm" name="action" value="break-start" class="btn btn--ghost">休憩入り</button>
     
       @elseif ($state === 'break')
-        <button type="submit" form="punchForm" class="btn btn--ghost"   data-action="break-end">休憩戻り</button>
+        <button type="submit" form="punchForm" name="action" value="break-end"   class="btn btn--ghost">休憩戻り</button>
     
       @else
         <p class="att-message">お疲れ様でした。</p>
       @endif
     </div>
+    
   </div>
 </div>
 
 {{-- 時刻のライブ更新（分解像度、秒は非表示） --}}
 <script>
-  (()=>{
-    const form = document.getElementById('punchForm');
-    const inp  = document.getElementById('punchAction');
-    document.querySelectorAll('button[form="punchForm"][data-action]').forEach(b=>{
-      b.addEventListener('click', ()=>{ inp.value = b.dataset.action; });
-    });
+  (() => {
+    const el = document.getElementById('attendTime');
+    if (!el) return;
+    const pad = n => ('0' + n).slice(-2);
+    const tick = () => {
+      const d = new Date();
+      el.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    // 初回即時＆30秒ごと更新（分解像度、秒は表示しない）
+    tick();
+    setInterval(tick, 60 * 1000);
   })();
-</script>
+  </script>
+
 @endsection

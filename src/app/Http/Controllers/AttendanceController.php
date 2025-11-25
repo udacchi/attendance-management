@@ -22,32 +22,160 @@ class AttendanceController extends Controller
         if (!$user) abort(401);
 
         $tz  = config('app.timezone', 'Asia/Tokyo');
-        $now = Carbon::now($tz);
+        $now = \Carbon\Carbon::now($tz);
 
-        // きょうの勤怠を取得
-        $day = AttendanceDay::with('breaks')
-            ->where('user_id', $user->id)
-            ->whereDate('work_date', $now->toDateString())
+        // 1) 「出勤済み && 未退勤」を最優先
+        $open = AttendanceDay::where('user_id', $user->id)
+            ->whereNotNull('clock_in_at')      // ★追加：出勤済みに限定
+            ->whereNull('clock_out_at')
+            ->orderByDesc('work_date')
             ->first();
 
-        // 状態は status カラムを優先。無ければ時計情報から推定。
-        $state = $day->status ?? null;
-        if (!$state) {
-            if (!$day || !$day->clock_in_at) {
-                $state = 'before';
-            } elseif ($day->clock_in_at && !$day->clock_out_at) {
-                $hasOpenBreak = $day->breaks?->whereNull('ended_at')->isNotEmpty();
-                $state = $hasOpenBreak ? 'break' : 'working';
+        // 2) それが無ければ「直近の勤怠レコード（前日でもOK）」を拾う
+        //    → 退勤直後はここで昨日のレコードを拾い、画面は「退勤済」を表示できる
+        $day = $open ?: AttendanceDay::where('user_id', $user->id)
+            ->orderByDesc('work_date')
+            ->first();
+
+        // 画面用ステート
+        $state = 'before';
+        $displayTime = $now->format('H:i');
+
+        if ($day) {
+            if ($day->clock_out_at) {
+                $state = 'after'; // ★退勤済 → 「退勤済」を表示
             } else {
-                $state = 'after';
+                $hasOpenBreak = $day->breaks()->whereNull('ended_at')->exists();
+                if ($hasOpenBreak) {
+                    $state = 'break';
+                } elseif ($day->clock_in_at) {
+                    $state = 'working'; // ★ここで「退勤」ボタンが出る
+                    $displayTime = \Carbon\Carbon::parse($day->clock_in_at)->timezone($tz)->format('H:i');
+                } else {
+                    $state = 'before';
+                }
             }
         }
 
         return view('attendance.stamp', [
-            'state'       => $state,               // 'before' | 'working' | 'break' | 'after'
-            'today'       => $now,                 // Carbon
-            'displayTime' => $now->format('H:i') // 画面の時刻表示
+            'state'       => $state,
+            'today'       => $now,
+            'displayTime' => $displayTime,
         ]);
+    }
+
+
+    /** 出勤 */
+    public function clockIn()
+    {
+        $userId = Auth::guard('web')->id();
+        if (!$userId) abort(401);
+
+        $now = Carbon::now(config('app.timezone', 'Asia/Tokyo'));
+        $day = AttendanceDay::firstOrCreate(
+            ['user_id' => $userId, 'work_date' => $now->toDateString()],
+            ['status'  => 'before']
+        );
+
+        if (!$day->clock_in_at) {
+            $day->clock_in_at = $now;
+            $day->status = 'working';
+            $day->save();
+        }
+        return back()->with('status', 'clocked-in');
+    }
+
+    private function resolveOpenDay(int $userId, \Carbon\Carbon $now): ?\App\Models\AttendanceDay
+    {
+        // 未退勤を最優先
+        $open = \App\Models\AttendanceDay::where('user_id', $userId)
+            ->whereNull('clock_out_at')
+            ->orderByDesc('work_date')
+            ->first();
+
+        if ($open) return $open;
+
+        // なければ「きょう」のレコード（存在しなければ null、clock-in 時に作る）
+        return \App\Models\AttendanceDay::where('user_id', $userId)
+            ->whereDate('work_date', $now->toDateString())
+            ->first();
+    }
+
+    /** 退勤 */
+    public function clockOut()
+    {
+        $userId = Auth::guard('web')->id();
+        if (!$userId) abort(401);
+
+        $tz  = config('app.timezone', 'Asia/Tokyo');
+        $now = \Carbon\Carbon::now($tz);
+
+        $day = $this->resolveOpenDay($userId, $now);
+        if (!$day || !$day->clock_in_at) {
+            return back()->with('error', '退勤できる勤務がありません');
+        }
+
+        // 開いている休憩があれば閉じる
+        if ($openBreak = $day->breaks()->whereNull('ended_at')->first()) {
+            $openBreak->ended_at = $now;
+            $openBreak->save();
+        }
+
+        $day->clock_out_at = $now;
+        // ★ ここを一旦外す（DB側の定義が合うまで）
+        // $day->status = 'checked_out';
+        $day->save();
+
+        return back()->with('status', 'clocked-out');
+    }
+
+    /** 休憩入り */
+    public function breakIn()
+    {
+        $userId = Auth::guard('web')->id();
+        if (!$userId) abort(401);
+
+        $tz  = config('app.timezone', 'Asia/Tokyo');
+        $now = \Carbon\Carbon::now($tz);
+
+        $day = $this->resolveOpenDay($userId, $now);
+        if (!$day || !$day->clock_in_at || $day->clock_out_at) {
+            return back()->with('error', '休憩開始できる勤務がありません');
+        }
+
+        // 既に未終了の休憩があれば何もしない（or エラー）
+        if (!$day->breaks()->whereNull('ended_at')->exists()) {
+            $day->breaks()->create(['started_at' => $now]);
+        }
+
+        $day->status = 'breaking';
+        $day->save();
+
+        return back()->with('status', 'break-started');
+    }
+
+    /** 休憩戻り */
+    public function breakOut()
+    {
+        $userId = Auth::guard('web')->id();
+        if (!$userId) abort(401);
+
+        $tz  = config('app.timezone', 'Asia/Tokyo');
+        $now = \Carbon\Carbon::now($tz);
+
+        $day = $this->resolveOpenDay($userId, $now);
+        if (!$day) return back()->with('error', '対象勤務がありません');
+
+        $openBreak = $day->breaks()->whereNull('ended_at')->first();
+        if ($openBreak) {
+            $openBreak->ended_at = $now;
+            $openBreak->save();
+        }
+
+        $day->status = 'working';
+        $day->save();
+
+        return back()->with('status', 'break-ended');
     }
 
     /** 打刻アクション（POST /attendance/punch）
@@ -260,103 +388,6 @@ class AttendanceController extends Controller
             'record'    => $record,
             'isPending' => $isPending,
         ]);
-    }
-
-    /** 出勤 */
-    public function clockIn()
-    {
-        $userId = Auth::guard('web')->id();
-        if (!$userId) abort(401);
-
-        $now = Carbon::now(config('app.timezone', 'Asia/Tokyo'));
-        $day = AttendanceDay::firstOrCreate(
-            ['user_id' => $userId, 'work_date' => $now->toDateString()],
-            ['status'  => 'before']
-        );
-
-        if (!$day->clock_in_at) {
-            $day->clock_in_at = $now;
-            $day->status = 'working';
-            $day->save();
-        }
-        return back()->with('status', 'clocked-in');
-    }
-
-    /** 休憩開始 */
-    public function breakStart()
-    {
-        $userId = Auth::guard('web')->id();
-        if (!$userId) abort(401);
-
-        $now = Carbon::now('Asia/Tokyo');
-        $day = AttendanceDay::firstOrCreate(
-            ['user_id' => $userId, 'work_date' => $now->toDateString()]
-        );
-
-        $day->breaks()->create(['started_at' => $now]); // ended_at は後で埋める
-        $day->status = 'break';
-        $day->save();
-
-        return back()->with('status', 'break-started');
-    }
-
-    /** 休憩終了 */
-    public function breakEnd()
-    {
-        $userId = Auth::guard('web')->id();
-        if (!$userId) abort(401);
-
-        $now = Carbon::now('Asia/Tokyo');
-        $day = AttendanceDay::where('user_id', $userId)->whereDate('work_date', $now->toDateString())->firstOrFail();
-
-        $open = $day->breaks()->whereNull('ended_at')->latest('started_at')->first();
-        if ($open) {
-            $open->ended_at = $now;
-            $open->save();
-        }
-        $day->status = 'working';
-        $day->save();
-
-        return back()->with('status', 'break-ended');
-    }
-
-    /** 退勤（集計も確定） */
-    public function clockOut()
-    {
-        $userId = Auth::guard('web')->id();
-        if (!$userId) abort(401);
-
-        $now = Carbon::now('Asia/Tokyo');
-        $day = AttendanceDay::firstOrCreate(
-            ['user_id' => $userId, 'work_date' => $now->toDateString()]
-        );
-
-        if (!$day->clock_out_at) {
-            $day->clock_out_at = $now;
-        }
-
-        // 休憩合算（total_break_minutes が未確定なら break_periods から算出）
-        $breakMin = (int)($day->total_break_minutes ?? 0);
-        if ($breakMin === 0) {
-            $breakMin = 0;
-            foreach ($day->breaks as $bp) {
-                if ($bp->started_at && $bp->ended_at) {
-                    $breakMin += Carbon::parse($bp->ended_at)->diffInMinutes(Carbon::parse($bp->started_at));
-                }
-            }
-            $day->total_break_minutes = $breakMin;
-        }
-
-        // 実働
-        if ($day->clock_in_at && $day->clock_out_at) {
-            $worked = Carbon::parse($day->clock_out_at)->diffInMinutes(Carbon::parse($day->clock_in_at), false) - $breakMin;
-            $day->total_work_minutes = max(0, $worked);
-        }
-
-        $day->status = 'after';
-        $day->save();
-
-        return back()->with('status', 'clocked-out');
     }
 
     // ================= ヘルパ =================
