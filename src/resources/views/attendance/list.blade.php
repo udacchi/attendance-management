@@ -56,7 +56,7 @@
           <path d="M6.2 16.6l1.0 1.0 2.0-2.0"  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       
-        <span id="monthDisplay" class="month-nav__display">{{ $month->format('Y/m') }}</span>
+        <span id="monthDisplay" class="month-nav__display">{{ $month->isoformat('YYYY年M月') }}</span>
       
         <input id="monthPicker" class="month-nav__input" type="month" name="month"
                value="{{ $month->format('Y-m') }}" onchange="this.form.submit()">
