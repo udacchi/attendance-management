@@ -8,24 +8,46 @@
 
 @section('content')
 <div class="verify-email__container">
+  {{-- 成功フラッシュ（Fortify標準） --}}
+  @if (session('status') === 'verification-link-sent')
+    <div class="verify-email__hint" style="margin-bottom:12px;color:#0a7;">
+      認証メールを再送しました。受信箱をご確認ください。
+    </div>
+  @endif
+
   <p class="verify-email__message">
     登録していただいたメールアドレスに認証メールを送付しました。<br>
-    メール認証を完了して下さい。
+    メール認証を完了してください。
   </p>
 
-  <form method="GET" action="{{ route('verification.notice') }}">
-    <button type="submit" class="btn btn-primary">
-        認証はこちらから
-    </button>
-  </form>
+  {{-- ▼ MailHog を新しいタブで開く「ボタン」：常に表示 --}}
+  @php $previewUrl = config('services.mail_preview_url', 'http://localhost:8025'); @endphp
+  @if (Route::has('open.mailhog'))
+    <form method="GET" action="{{ route('open.mailhog') }}" target="_blank" class="verify-email__actions">
+      <button type="submit" class="btn">認証はこちらから</button>
+    </form>
+  @else
+    {{-- ルート未作成でも動くフォールバック（直接URL） --}}
+    <form method="GET" action="{{ $previewUrl }}" target="_blank" class="verify-email__actions">
+      <button type="submit" class="btn">認証はこちらから</button>
+    </form>
+  @endif
 
-  <form method="POST" action="{{ route('verification.send') }}">
+  {{-- ▼ 再送はリンク見た目 + 内部はPOST（Fortifyの verification.send） --}}
+  <form id="resendForm"
+        method="POST"
+        action="{{ route('verification.send') }}"
+        class="verify-email__actions"
+        style="margin-top:20px;">
     @csrf
-    <a href="#"
+    <a href="{{ route('verification.send') }}"
        class="verify-email__resend-link"
-       onclick="event.preventDefault(); this.closest('form').submit();">
-        認証メールを再送する
+       onclick="event.preventDefault(); document.getElementById('resendForm').submit();">
+      認証メールを再送する
     </a>
+    <noscript>
+      <button type="submit" class="link-like">（JS無効時はこちら）</button>
+    </noscript>
   </form>
 </div>
 @endsection
