@@ -74,6 +74,9 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         return redirect()->route('attendance.stamp');
     });
 
+    Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut'])
+        ->name('attendance.clock-out');
+
     // 勤怠一覧
     Route::get('/attendance/list', [AttendanceController::class, 'list'])->name('attendance.list');
 
