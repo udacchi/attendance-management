@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->dateTime('clock_out_at')->nullable();
 
             // UIバッジ用（勤務外/出勤中/休憩中/退勤済）
-            $table->enum('status', ['before', 'working', 'break', 'after'])->default('before');
+            $table->enum('status', ['before', 'working', 'break', 'after', 'off'])->default('before');
 
             // 集計（分）…アプリ側で更新。NULL=未確定
             $table->unsignedInteger('total_work_minutes')->nullable();
