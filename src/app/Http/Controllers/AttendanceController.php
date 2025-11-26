@@ -290,13 +290,14 @@ class AttendanceController extends Controller
             ->where('user_id', $user->id)
             ->whereBetween('work_date', [$start->toDateString(), $end->toDateString()])
             ->get()
-            ->keyBy(fn($d) => (string) $d->work_date);
+            ->keyBy(fn($d) => \Carbon\Carbon::parse($d->work_date, $tz)->toDateString());
 
         $days = [];
         for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
             $key = $d->toDateString();
             $ad  = $rows[$key] ?? null;
 
+            // 休憩の明細テキスト（合計が空のときのフォールバック用）
             $breakText = '';
             if ($ad && $ad->breaks->isNotEmpty()) {
                 $parts = [];
@@ -308,20 +309,48 @@ class AttendanceController extends Controller
                 $breakText = implode(', ', array_filter($parts));
             }
 
+            // 休憩合計（total_break_minutes が無ければ明細から集計）
+            $breakMin = 0;
+            if ($ad) {
+                $breakMin = (int)($ad->total_break_minutes ?? 0);
+                if ($breakMin === 0 && $ad->breaks) {
+                    foreach ($ad->breaks as $bp) {
+                        if ($bp->started_at && $bp->ended_at) {
+                            $bs = Carbon::parse($bp->started_at, $tz)->second(0);
+                            $be = Carbon::parse($bp->ended_at,   $tz)->second(0);
+                            // マイナス防止（順序が逆だった場合も0に）
+                            $breakMin += max(0, $be->diffInMinutes($bs, true));
+                        }
+                    }
+                }
+            } // ★ ←←← ここが不足していました（if ($ad) のクローズ）
+
+            // 勤務合計（勤務スパンから休憩を控除）
+            $workMin = null;
+            if ($ad && $ad->clock_in_at && $ad->clock_out_at) {
+                $in  = Carbon::parse($ad->clock_in_at,  $tz)->second(0);
+                $out = Carbon::parse($ad->clock_out_at, $tz)->second(0);
+                $spanMin = $out->diffInMinutes($in, true);
+                $effectiveBreak = min($breakMin, $spanMin);
+                $workMin = max(0, $spanMin - $effectiveBreak);
+            }
+
             $days[] = [
-                'date'         => $d->copy(),
-                'clock_in'     => $ad && $ad->clock_in_at  ? Carbon::parse($ad->clock_in_at,  $tz)->format('H:i') : '',
-                'clock_out'    => $ad && $ad->clock_out_at ? Carbon::parse($ad->clock_out_at, $tz)->format('H:i') : '',
-                'break_total'  => $ad ? $this->formatMinutes($ad->total_break_minutes) : '',
-                'break_text'   => $breakText,
+                'date'        => $d->toDateString(),
+                'clock_in'    => $ad && $ad->clock_in_at  ? Carbon::parse($ad->clock_in_at,  $tz)->format('H:i') : '',
+                'clock_out'   => $ad && $ad->clock_out_at ? Carbon::parse($ad->clock_out_at, $tz)->format('H:i') : '',
+                'break_total' => $breakMin > 0 ? $this->formatMinutes($breakMin) : '',
+                'break_text'  => $breakText, // 合計が空の時だけBladeで使用
+                'work_total'  => $workMin !== null ? $this->formatMinutes($workMin) : '',
             ];
-        }
+        } // for ループ終わり
 
         $prevMonth = $month->copy()->subMonthNoOverflow();
         $nextMonth = $month->copy()->addMonthNoOverflow();
 
         return view('attendance.list', compact('month', 'days', 'prevMonth', 'nextMonth'));
     }
+
 
     private function formatMinutes(?int $min): string
     {

@@ -101,7 +101,7 @@
               <td class="cell--date">{{ $dCarbon->isoFormat('MM/DD(ddd)') }}</td>
               <td class="cell--time">{{ $d['clock_in']   ?? '' }}</td>
               <td class="cell--time">{{ $d['clock_out']  ?? '' }}</td>
-              <td class="cell--time">{{ $d['break_text'] ?? ($d['break_total'] ?? '') }}</td>
+              <td class="cell--time">{{ $d['break_total'] !== '' ? $d['break_total'] : ($d['break_text'] ?? '') }}</td>
               <td class="cell--time">{{ $d['work_total'] ?? '' }}</td>
               <td class="cell--link">
                 <a class="detail-link"
