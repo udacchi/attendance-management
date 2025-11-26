@@ -22,9 +22,13 @@ class AttendanceDay extends Model
     ];
 
     protected $casts = [
-        'work_date'    => 'date',
-        'clock_in_at'  => 'datetime',
-        'clock_out_at' => 'datetime',
+        'work_date'      => 'date',
+        'clock_in_at'    => 'datetime',
+        'clock_out_at'   => 'datetime',
+        'break1_start_at' => 'datetime',
+        'break1_end_at'  => 'datetime',
+        'break2_start_at' => 'datetime',
+        'break2_end_at'  => 'datetime',
     ];
 
     // === ここから 0時跨ぎ対応付きの合計再計算メソッド ===

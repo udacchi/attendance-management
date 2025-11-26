@@ -66,12 +66,12 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
     // 勤怠一覧／詳細
     Route::get('/attendance/list', [AttendanceController::class, 'list'])->name('attendance.list');
 
-    Route::get('/attendance/{date}', [AttendanceController::class, 'detail'])
-        ->where('date', '\d{4}-\d{2}-\d{2}')
+    // 詳細（?date=YYYY-MM-DD）
+    Route::get('/attendance/detail', [AttendanceController::class, 'detail'])
         ->name('attendance.detail');
 
-    // 申請（一般ユーザー）
-    Route::post('/attendance/{date}/request', [StampCorrectionRequestController::class, 'store'])
+    // 修正申請（/attendance/{date}/request）
+    Route::post('/attendance/{date}/request', [AttendanceController::class, 'requestCorrection'])
         ->where('date', '\d{4}-\d{2}-\d{2}')
         ->name('attendance.request');
 });

@@ -21,16 +21,14 @@ class CorrectionRequest extends Model
         'proposed_clock_out_at',
         'proposed_note',
         'status',
+        'payload',
     ];
 
     protected $casts = [
-        'target_at'     => 'datetime',
-        'clock_in'      => 'datetime',
-        'clock_out'     => 'datetime',
-        'break1_start'  => 'datetime',
-        'break1_end'    => 'datetime',
-        'break2_start'  => 'datetime',
-        'break2_end'    => 'datetime',
+        // ★ ここだけでOK（テーブルに存在する日時だけ）
+        'proposed_clock_in_at'  => 'datetime',
+        'proposed_clock_out_at' => 'datetime',
+        'payload'               => 'array',
     ];
 
     // --- Relations ---
@@ -40,6 +38,11 @@ class CorrectionRequest extends Model
     }
 
     public function user()
+    {
+        return $this->belongsTo(User::class, 'requested_by');
+    }
+
+    public function requester()
     {
         return $this->belongsTo(User::class, 'requested_by');
     }

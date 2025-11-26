@@ -41,6 +41,7 @@
 
     <form method="POST" action="{{ route('attendance.request', ['date' => $date->toDateString()]) }}">
       @csrf
+      <input type="hidden" name="date" value="{{ $date->toDateString() }}">
 
       <div class="detail-card {{ ($isPending ?? false) ? 'is-pending' : '' }}">
         <table class="detail-table">
