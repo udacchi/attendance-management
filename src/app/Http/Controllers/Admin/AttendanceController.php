@@ -240,9 +240,10 @@ class AttendanceController extends Controller
     public function updateByUserDate(Request $request, User $user)
     {
         $tz   = config('app.timezone', 'Asia/Tokyo');
-        $date = $request->query('date')
-            ? Carbon::parse($request->query('date'), $tz)->startOfDay()
-            : Carbon::now($tz)->startOfDay();
+        $dateStr = $request->input('date') ?: $request->query('date');
+        $date = $dateStr
+            ? \Carbon\Carbon::parse($dateStr, $tz)->startOfDay()
+            : \Carbon\Carbon::now($tz)->startOfDay();
 
         // ★ 管理者は承認待ちでも更新を許可する（必要ならこのブロックを削除）
         // if ($this->hasPendingCorrection($user->id, $date)) {
@@ -264,25 +265,36 @@ class AttendanceController extends Controller
         // ★ breaks[] を正規化（空行を捨てて昇順に）
         $rawBreaks = (array)$request->input('breaks', []);
         $norm = [];
+        $asEmpty = function (?string $v): bool {
+            $v = trim((string)$v);
+            return $v === '' || $v === '--:--';
+        };
+
         foreach ($rawBreaks as $row) {
             $s = isset($row['start']) ? trim((string)$row['start']) : '';
             $e = isset($row['end'])   ? trim((string)$row['end'])   : '';
-            if ($s === '' && $e === '') continue;           // 完全空行は無視
-            if ($s === '' || $e === '') {
+
+            // 完全空行（両方とも空 or '--:--'）は無視
+            if ($asEmpty($s) && $asEmpty($e)) continue;
+
+            // 片方だけ入力はエラー
+            if ($asEmpty($s) || $asEmpty($e)) {
                 return back()->withErrors(['休憩時間が不適切な値です'])->withInput();
             }
+
             $sd = $toDT($s);
             $ed = $toDT($e);
             if (!$sd || !$ed || $ed->lte($sd)) {
                 return back()->withErrors(['休憩時間が不適切な値です'])->withInput();
             }
-            // 出退勤の範囲チェック（どちらか欠けている場合は緩めに）
-            if ($in && $sd->lt($in))  return back()->withErrors(['休憩時間が不適切な値です'])->withInput();
+
+            if ($in && $sd->lt($in))   return back()->withErrors(['休憩時間が不適切な値です'])->withInput();
             if ($out && $sd->gt($out)) return back()->withErrors(['休憩時間が不適切な値です'])->withInput();
             if ($out && $ed->gt($out)) return back()->withErrors(['休憩時間もしくは退勤時間が不適切な値です'])->withInput();
 
             $norm[] = [$sd, $ed];
         }
+
         // 出勤 > 退勤 のチェック（0時跨ぎ運用を許容しない場合）
         if ($in && $out && $in->gt($out)) {
             return back()->withErrors(['出勤時間もしくは退勤時間が不適切な値です'])->withInput();
