@@ -46,34 +46,26 @@
             @php
               $tgt = $row->target_at ? \Carbon\Carbon::parse($row->target_at) : null;
               $req = $row->requested_at ? \Carbon\Carbon::parse($row->requested_at) : null;
+              $targetDate = $tgt ? $tgt->toDateString() : null;
             @endphp
             <tr>
               <td class="cell--status">
                 {{ $row->status === 'approved' ? '承認済み' : '承認待ち' }}
               </td>
               <td class="cell--name">{{ $row->user_name ?? '' }}</td>
-              <td class="cell--datetime">
-                {{ $tgt ? $tgt->isoFormat('YYYY/MM/DD') : '' }}
-              </td>
+              <td class="cell--datetime">{{ $tgt ? $tgt->isoFormat('YYYY/MM/DD') : '' }}</td>
               <td class="cell--reason">{{ $row->reason ?? '' }}</td>
-              <td class="cell--datetime">
-                {{ $req ? $req->isoFormat('YYYY/MM/DD') : '' }}
-              </td>
+              <td class="cell--datetime">{{ $req ? $req->isoFormat('YYYY/MM/DD') : '' }}</td>
               <td class="cell--link">
-                @php
-                  // 対象日（YYYY-MM-DD）を安全に取り出す
-                  $targetDate = $tgt ? $tgt->toDateString() : null;
-                @endphp
-              
                 @if(($isAdmin ?? false))
-                  {{-- 管理者：承認画面へ --}}
+                  {{-- 管理者：承認画面へ（共通パス版） --}}
                   <a class="detail-link"
                      href="{{ route('stamp_correction_request.approve', ['attendance_correct_request_id' => $row->id]) }}">
                     詳細
                   </a>
                 @else
-                  {{-- 一般ユーザー：勤怠詳細へ（自分の詳細なので日付のみでOK想定） --}}
-                  @if ($targetDate && Route::has('attendance.detail'))
+                  {{-- 一般ユーザー：自分の勤怠詳細へ --}}
+                  @if ($targetDate)
                     <a class="detail-link"
                        href="{{ route('attendance.detail', ['date' => $targetDate]) }}">
                       詳細
