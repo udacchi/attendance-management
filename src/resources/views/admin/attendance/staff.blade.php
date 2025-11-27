@@ -66,10 +66,10 @@
             @php $dCarbon = \Carbon\Carbon::parse($d['date']); @endphp
             <tr>
               <td class="cell--date">{{ $dCarbon->isoFormat('MM/DD(ddd)') }}</td>
-              <td class="cell--time">{{ $d['clock_in']   ?? '-' }}</td>
-              <td class="cell--time">{{ $d['clock_out']  ?? '-' }}</td>
-              <td class="cell--time">{{ $d['break_total']?? '-' }}</td>
-              <td class="cell--time">{{ $d['work_total'] ?? '-' }}</td>
+              <td class="cell--time">{{ $d['clock_in']   ?? '' }}</td>
+              <td class="cell--time">{{ $d['clock_out']  ?? '' }}</td>
+              <td class="cell--time">{{ $d['break_total']?? '' }}</td>
+              <td class="cell--time">{{ $d['work_total'] ?? '' }}</td>
               <td class="cell--link">
                 <a class="detail-link"
                    href="{{ route('admin.attendance.detail', ['id' => $user->id, 'date' => $dCarbon->toDateString()]) }}">
