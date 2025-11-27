@@ -53,14 +53,6 @@
 <div class="att-page">
   <div class="att-hero">
 
-    {{-- フラッシュメッセージ --}}
-    @if (session('status'))
-      <div class="flash flash--success">{{ session('status') }}</div>
-    @endif
-    @if (session('error'))
-      <div class="flash flash--error">{{ session('error') }}</div>
-    @endif
-
     {{-- ステータスバッジ --}}
     @php
       $badge = [
@@ -123,3 +115,8 @@
   </script>
 
 @endsection
+
+
+
+
+
