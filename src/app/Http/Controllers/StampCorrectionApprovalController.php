@@ -53,22 +53,78 @@ class StampCorrectionApprovalController extends Controller
 
         $a = $req->attendanceDay;
 
-        $breaks = [
-            ['start' => $hm($pick($req->new_break1_start, $req->break1_start)), 'end' => $hm($pick($req->new_break1_end, $req->break1_end))],
-            ['start' => $hm($pick($req->new_break2_start, $req->break2_start)), 'end' => $hm($pick($req->new_break2_end, $req->break2_end))],
-        ];
-        if (
-            empty($breaks[0]['start']) && empty($breaks[0]['end']) &&
-            empty($breaks[1]['start']) && empty($breaks[1]['end'])
-        ) {
-            $breaks[] = ['start' => '', 'end' => ''];
+        // ---- 休憩の復元ロジック ---- //
+        $breaks = [];
+
+        // 1) 申請 payload に休憩が入っている場合（これを最優先で表示）
+        if (!empty($req->payload['breaks']) && is_array($req->payload['breaks'])) {
+            foreach ($req->payload['breaks'] as $b) {
+                $breaks[] = [
+                    'start' => $hm($b['start'] ?? null),
+                    'end'   => $hm($b['end']   ?? null),
+                ];
+            }
         }
 
+        // 2) payload に無ければ、AttendanceDay の実績 break を使用
+        elseif ($req->attendanceDay && $req->attendanceDay->breaks) {
+            foreach ($req->attendanceDay->breaks as $bp) {
+                $breaks[] = [
+                    'start' => $hm($bp->started_at),
+                    'end'   => $hm($bp->ended_at),
+                ];
+            }
+        }
+
+        // ③実データの空行を除去（start と end が両方空の行）
+        $breaks = array_values(array_filter($breaks, function ($b) {
+            $s = $b['start'] ?? '';
+            $e = $b['end']   ?? '';
+            return ($s !== '' || $e !== '');
+        }));
+
+        // ④最後に必ず空の休憩行を 1 行追加
+        $breaks[] = ['start' => '', 'end' => ''];
+
+        // ----- 備考の統合（表示用） -----
+        // payload を安全に配列化
+        $payload = $req->payload;
+        if (!is_array($payload)) {
+            $payload = json_decode($payload ?? '', true);
+            if (!is_array($payload)) $payload = [];
+        }
+
+        // 候補を集める（空は除外）
+        $noteParts = array_filter([
+            $req->proposed_note ?? null,
+            $req->reason ?? null,
+            $payload['note'] ?? null,
+            optional($req->attendanceDay)->note,
+        ], fn($v) => $v !== null && $v !== '');
+
+        // --- 行単位で重複を除去 ---
+        $split = fn(string $t) => preg_split('/\R/u', $t); // 改行で分割（\r\n,\r,\n 全対応）
+        $seen = [];
+        $lines = [];
+        foreach ($noteParts as $t) {
+            foreach ($split($t) as $line) {
+                $line = trim($line);
+                if ($line === '') continue;
+                $key = mb_strtolower($line);   // 大文字小文字/全半角差を吸収したいならここで正規化を追加
+                if (!isset($seen[$key])) {
+                    $seen[$key] = true;
+                    $lines[] = $line;
+                }
+            }
+        }
+        $noteMerged = implode("\n", $lines);
+
+        // 表示用レコード
         $record = [
             'name'      => optional($req->user)->name,
             'clock_in'  => $hm($pick($req->new_clock_in,  $req->clock_in,  optional($a)->clock_in_at)),
             'clock_out' => $hm($pick($req->new_clock_out, $req->clock_out, optional($a)->clock_out_at)),
-            'note'      => $pick($req->note, $req->reason),
+            'note'      => $noteMerged,   // ← 重複排除済み
             'breaks'    => $breaks,
         ];
 

@@ -545,8 +545,7 @@ class AttendanceController extends Controller
         ]);
 
         return redirect()
-            ->route('attendance.detail', ['date' => $date->toDateString()])
-            ->with('status', '修正申請を送信しました');
+            ->route('attendance.detail', ['date' => $date->toDateString()]);
     }
 }
 

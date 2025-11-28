@@ -58,18 +58,11 @@
           <tr>
             <th>備考</th>
             <td colspan="3" class="cell--inputs">
-              <textarea class="note-box" rows="2" readonly>{{ $record['note'] ?? '' }}</textarea>
+              <div class="note-box note-box--static">
+                {!! nl2br(e(($record['note'] ?? '') !== '' ? $record['note'] : '（なし）')) !!}
+              </div>
             </td>
           </tr>
-
-          @if (!empty($req->proposed_note))
-            <tr>
-              <th>申請メモ</th>
-              <td colspan="3" class="cell--inputs">
-                <div class="approve-note">{{ $req->proposed_note }}</div>
-              </td>
-            </tr>
-          @endif
         </tbody>
       </table>
     </div>

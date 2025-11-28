@@ -111,6 +111,19 @@ body { background: var(--canvas); }
   resize: vertical;
 }
 
+.note-box--static{
+  min-width: 400px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--text1);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: normal; /* 改行は <br> で出す */
+}
+
 /* 操作ボタン */
 .approve-actions{
   width: min(900px,100%);
@@ -166,3 +179,34 @@ body { background: var(--canvas); }
 /* 予防：iOS Safari などでピッカーが出ないように */
 .chip-input.is-static { -webkit-appearance: none; appearance: none; background: transparent; }
 
+/* ▼ 他CSSの疑似要素で上書きされるのを防止（最重要） */
+.cell--inputs::before,
+.cell--inputs::after,
+.note-box::before,
+.note-box::after,
+.note-box--static::before,
+.note-box--static::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* 表示層を最前面にして確実に見せる */
+.cell--inputs { position: relative; }
+.note-box, .note-box--static {
+  position: relative;
+  z-index: 2;
+  color: #000000 !important;
+  background: #ffffff !important;
+}
+
+/* divで表示する備考（読み取り専用） */
+.note-box--static{
+  min-width: 400px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: normal;
+}
