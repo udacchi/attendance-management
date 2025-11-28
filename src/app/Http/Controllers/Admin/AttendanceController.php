@@ -12,6 +12,7 @@ use App\Models\AttendanceDay;
 use App\Models\User;
 use App\Models\CorrectionLog;
 use App\Models\CorrectionRequest;
+use App\Http\Requests\Admin\AttendanceUpdateRequest;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Carbon\Carbon;
 
@@ -218,90 +219,54 @@ class AttendanceController extends Controller
 
 
     // 編集フォーム（user+date ベース）
-    public function editByUserDate(Request $request, User $user)
-    {
-        $tz   = config('app.timezone', 'Asia/Tokyo');
-        $date = $request->query('date')
-            ? Carbon::parse($request->query('date'), $tz)->startOfDay()
-            : Carbon::now($tz)->startOfDay();
-
-        // その日のレコードが無ければ作る（管理者の直接修正対象を必ず用意）
-        $attendanceDay = AttendanceDay::firstOrCreate(
-            ['user_id' => $user->id, 'work_date' => $date->toDateString()],
-            [] // 初期値は空でOK（打刻なし状態）
-        );
-
-        $attendanceDay->load('breakPeriods'); // 必要なら
-
-        return $this->detailByUserDate($user->id, $request);
-    }
-
-    // 更新（管理者が直接反映：FN040、要件FN039のバリデーションを内蔵）
-    public function updateByUserDate(Request $request, User $user)
+    public function updateByUserDate(AttendanceUpdateRequest $request, User $user)
     {
         $tz   = config('app.timezone', 'Asia/Tokyo');
         $dateStr = $request->input('date') ?: $request->query('date');
         $date = $dateStr
-            ? \Carbon\Carbon::parse($dateStr, $tz)->startOfDay()
-            : \Carbon\Carbon::now($tz)->startOfDay();
-
-        // ★ 管理者は承認待ちでも更新を許可する（必要ならこのブロックを削除）
-        // if ($this->hasPendingCorrection($user->id, $date)) {
-        //     return back()->with('error', '承認待ちのため修正はできません。')->withInput();
-        // }
+            ? Carbon::parse($dateStr, $tz)->startOfDay()
+            : Carbon::now($tz)->startOfDay();
 
         $attendanceDay = AttendanceDay::firstOrCreate(
             ['user_id' => $user->id, 'work_date' => $date->toDateString()],
             []
         );
 
-        // ---- 入力を取り出し（HH:MM → Carbon）----
+        // ---- 入力を取り出し（HH:MM → Carbon。※ここではバリデーションしない！）----
         $toDT = function (?string $hm) use ($date, $tz) {
             return $hm ? Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' ' . $hm, $tz)->second(0) : null;
         };
         $in  = $toDT($request->input('clock_in'));
         $out = $toDT($request->input('clock_out'));
 
-        // ★ breaks[] を正規化（空行を捨てて昇順に）
-        $rawBreaks = (array)$request->input('breaks', []);
+        // breaks[] 形式 or break1_*/break2_* 形式のどちらでも受ける
         $norm = [];
-        $asEmpty = function (?string $v): bool {
-            $v = trim((string)$v);
-            return $v === '' || $v === '--:--';
-        };
-
-        foreach ($rawBreaks as $row) {
-            $s = isset($row['start']) ? trim((string)$row['start']) : '';
-            $e = isset($row['end'])   ? trim((string)$row['end'])   : '';
-
-            // 完全空行（両方とも空 or '--:--'）は無視
-            if ($asEmpty($s) && $asEmpty($e)) continue;
-
-            // 片方だけ入力はエラー
-            if ($asEmpty($s) || $asEmpty($e)) {
-                return back()->withErrors(['休憩時間が不適切な値です'])->withInput();
+        $rawBreaks = (array) $request->input('breaks', []);
+        if (!empty($rawBreaks)) {
+            foreach ($rawBreaks as $row) {
+                $s = $row['start'] ?? null;
+                $e = $row['end']   ?? null;
+                if ($s === null && $e === null) continue;
+                $sd = $toDT($s);
+                $ed = $toDT($e);
+                if ($sd && $ed) $norm[] = [$sd, $ed];
             }
-
-            $sd = $toDT($s);
-            $ed = $toDT($e);
-            if (!$sd || !$ed || $ed->lte($sd)) {
-                return back()->withErrors(['休憩時間が不適切な値です'])->withInput();
+        } else {
+            // prepareForValidation で写し替え済みの break1_*/break2_* を拾う
+            $pairs = [
+                [$request->input('break1_start'), $request->input('break1_end')],
+                [$request->input('break2_start'), $request->input('break2_end')],
+            ];
+            foreach ($pairs as [$s, $e]) {
+                if (!$s && !$e) continue;
+                $sd = $toDT($s);
+                $ed = $toDT($e);
+                if ($sd && $ed) $norm[] = [$sd, $ed];
             }
-
-            if ($in && $sd->lt($in))   return back()->withErrors(['休憩時間が不適切な値です'])->withInput();
-            if ($out && $sd->gt($out)) return back()->withErrors(['休憩時間が不適切な値です'])->withInput();
-            if ($out && $ed->gt($out)) return back()->withErrors(['休憩時間もしくは退勤時間が不適切な値です'])->withInput();
-
-            $norm[] = [$sd, $ed];
-        }
-
-        // 出勤 > 退勤 のチェック（0時跨ぎ運用を許容しない場合）
-        if ($in && $out && $in->gt($out)) {
-            return back()->withErrors(['出勤時間もしくは退勤時間が不適切な値です'])->withInput();
         }
 
         DB::transaction(function () use ($attendanceDay, $in, $out, $request, $tz, $date, $user, $norm) {
-            // 変更前スナップショット（★監査ログ用）
+            // 変更前スナップショット
             $attendanceDay->load('breakPeriods');
             $tbl = 'break_periods';
             $colStart = Schema::hasColumn($tbl, 'break_start_at') ? 'break_start_at'
@@ -328,7 +293,7 @@ class AttendanceController extends Controller
             $attendanceDay->note         = (string)$request->input('note', '');
             $attendanceDay->save();
 
-            // 休憩差し替え（可変長対応）
+            // 休憩差し替え
             if (method_exists($attendanceDay, 'breakPeriods')) {
                 $attendanceDay->breakPeriods()->delete();
                 if ($colStart && $colEnd) {
@@ -341,7 +306,7 @@ class AttendanceController extends Controller
                 }
             }
 
-            // 合計再計算（秒→分切り捨て）
+            // 合計再計算
             $attendanceDay->load('breakPeriods');
             $breakSeconds = 0;
             foreach ($attendanceDay->breakPeriods as $bp) {
@@ -352,7 +317,7 @@ class AttendanceController extends Controller
 
             $adjustedOut = $out ? $out->copy() : null;
             if ($in && $adjustedOut && $adjustedOut->lt($in)) {
-                $adjustedOut->addDay(); // 0時跨ぎ対応（必要なら）
+                $adjustedOut->addDay(); // 跨日ケア（必要に応じて）
             }
             $workSeconds = ($in && $adjustedOut) ? max(0, $adjustedOut->diffInSeconds($in) - $breakSeconds) : 0;
 
@@ -364,8 +329,8 @@ class AttendanceController extends Controller
             }
             if ($attendanceDay->isDirty()) $attendanceDay->save();
 
-            // 監査ログ（存在する場合のみ）
-            if (class_exists(CorrectionLog::class) && Schema::hasTable('correction_logs')) {
+            // 監査ログ（存在すれば）
+            if (class_exists(\App\Models\CorrectionLog::class) && Schema::hasTable('correction_logs')) {
                 $after = [
                     'clock_in_at'  => $attendanceDay->clock_in_at,
                     'clock_out_at' => $attendanceDay->clock_out_at,
@@ -391,6 +356,7 @@ class AttendanceController extends Controller
                 try {
                     \App\Models\CorrectionLog::create($payload);
                 } catch (\Throwable $e) {
+                    // noop
                 }
             }
         });
