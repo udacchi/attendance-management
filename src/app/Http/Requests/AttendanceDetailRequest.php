@@ -26,7 +26,7 @@ class AttendanceDetailRequest extends FormRequest
             'date'               => ['required', 'date'],
             'clock_in'           => ['nullable', 'date_format:H:i'],
             'clock_out'          => ['nullable', 'date_format:H:i'],
-            'breaks'             => ['sometimes', 'array'],      // ← 未送信も許容
+            'breaks'             => ['sometimes', 'array'],
             'breaks.*.start'     => ['nullable', 'date_format:H:i'],
             'breaks.*.end'       => ['nullable', 'date_format:H:i'],
             'note'               => ['required', 'string'],
@@ -38,6 +38,7 @@ class AttendanceDetailRequest extends FormRequest
         return [
             'date.required'              => '日付が取得できませんでした',
             'date.date'                  => '日付の形式が不正です',
+            // 個別キーの文言は残してOK（最終的に clock_pair にまとめて表示）
             'clock_in.date_format'       => '出勤時間が不適切な値です',
             'clock_out.date_format'      => '退勤時間が不適切な値です',
             'breaks.*.start.date_format' => '休憩時間が不適切な値です',
@@ -59,12 +60,7 @@ class AttendanceDetailRequest extends FormRequest
             $in  = $toMin($this->input('clock_in'));
             $out = $toMin($this->input('clock_out'));
 
-            // 出勤>退勤 / 退勤<出勤
-            if ($in !== null && $out !== null && $in > $out) {
-                $v->errors()->add('clock_in',  '出勤時間もしくは退勤時間が不適切な値です');
-                $v->errors()->add('clock_out', '出勤時間もしくは退勤時間が不適切な値です');
-            }
-
+            // 休憩の整合性チェック（既存ロジック維持）
             $brs = $this->input('breaks', []);
             foreach ($brs as $i => $b) {
                 $s = $toMin($b['start'] ?? null);
@@ -76,8 +72,24 @@ class AttendanceDetailRequest extends FormRequest
                 }
                 if ($out !== null) {
                     if ($s !== null && $s > $out) $v->errors()->add("breaks.$i.start", '休憩時間が不適切な値です');
-                    if ($e !== null && $e > $out) $v->errors()->add("breaks.$i.end",   '休憩時間もしくは退勤時間が不適切な値です');
+                    if ($e !== null && $e > $out) $v->errors()->add("breaks.$i.end",   '休憩時間が不適切な値です');
                 }
+            }
+
+            // ===== 「出勤/退勤のエラーを1本化」 =====
+            $errors = $v->errors();
+
+            $formatInvalid = $errors->has('clock_in') || $errors->has('clock_out');
+            $orderInvalid  = ($in !== null && $out !== null && $in > $out);
+
+            if ($orderInvalid) {
+                // 両方入力されていて前後関係が不正
+                $errors->add('clock_pair', '出勤時間もしくは退勤時間が不適切な値です');
+            }
+
+            if ($formatInvalid) {
+                // どちらかのフォーマットが不正でも共通キーへ
+                $errors->add('clock_pair', '出勤時間もしくは退勤時間が不適切な値です');
             }
         });
     }

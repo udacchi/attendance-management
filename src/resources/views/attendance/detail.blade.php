@@ -72,8 +72,7 @@
                        value="{{ old('clock_out', $record['clock_out'] ?? '') }}" {{ $isPending ? 'readonly' : '' }}>
               </td>
             </tr>
-            @error('clock_in')  <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
-            @error('clock_out') <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
+            @error('clock_pair')  <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
       
             {{-- 休憩 --}}
             @foreach ($record['breaks'] as $idx => $b)
