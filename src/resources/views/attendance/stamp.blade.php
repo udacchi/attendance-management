@@ -85,10 +85,10 @@
     
       @elseif ($state === 'working')
         <button type="submit" form="punchForm" name="action" value="clock-out"   class="btn btn--primary">退勤</button>
-        <button type="submit" form="punchForm" name="action" value="break-start" class="btn btn--ghost">休憩入り</button>
+        <button type="submit" form="punchForm" name="action" value="break-start" class="btn btn--ghost">休憩入</button>
     
       @elseif ($state === 'break')
-        <button type="submit" form="punchForm" name="action" value="break-end"   class="btn btn--ghost">休憩戻り</button>
+        <button type="submit" form="punchForm" name="action" value="break-end"   class="btn btn--ghost">休憩戻</button>
     
       @else
         <p class="att-message">お疲れ様でした。</p>
