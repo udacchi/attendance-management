@@ -88,9 +88,9 @@
                          value="{{ old("breaks.$idx.end", $b['end'] ?? '') }}" {{ $isPending ? 'readonly' : '' }}>
                 </td>
               </tr>
-              @error("breaks.$idx.start") <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
-              @error("breaks.$idx.end")   <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
             @endforeach
+            
+            @error('breaks_range') <tr><td colspan="4" class="cell--error">{{ $message }}</td></tr> @enderror
       
             {{-- 備考（インデント空白を入れない） --}}
             <tr>
