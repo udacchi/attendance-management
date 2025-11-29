@@ -53,6 +53,7 @@ class AttendanceController extends Controller
         $attByUser = AttendanceDay::query()
             ->when($userId, fn($q) => $q->where('user_id', $userId))
             ->whereDate('work_date', $date->toDateString())
+            ->with('breakPeriods')
             ->get()
             ->keyBy('user_id');
 
@@ -98,6 +99,55 @@ class AttendanceController extends Controller
             // 合計分取得（null の場合あり）
             $breakMin = $a->total_break_minutes ?? $a->break_minutes ?? null;
             $workMin  = $a->total_work_minutes  ?? $a->work_minutes  ?? null;
+
+            // ---- 不足時に“その場計算”（0 が入っていても再計算）----
+            $toMin = function ($v) {
+                if (empty($v)) return null;
+                $c = \Carbon\Carbon::parse($v);
+                return $c->hour * 60 + $c->minute;
+            };
+
+            // 休憩合計：null だけでなく 0 でも休憩明細があれば再計算
+            $needRecalcBreak =
+                $breakMin === null ||
+                ($breakMin == 0 && $a->relationLoaded('breakPeriods') && $a->breakPeriods->count() > 0);
+
+            if ($needRecalcBreak) {
+                $tbl = 'break_periods';
+                $colStart = Schema::hasColumn($tbl, 'break_start_at') ? 'break_start_at'
+                    : (Schema::hasColumn($tbl, 'started_at') ? 'started_at'
+                        : (Schema::hasColumn($tbl, 'start_at') ? 'start_at' : null));
+                $colEnd = Schema::hasColumn($tbl, 'break_end_at') ? 'break_end_at'
+                    : (Schema::hasColumn($tbl, 'ended_at') ? 'ended_at'
+                        : (Schema::hasColumn($tbl, 'end_at') ? 'end_at' : null));
+
+                $sum = 0;
+                if ($colStart && $colEnd && $a->relationLoaded('breakPeriods')) {
+                    foreach ($a->breakPeriods as $bp) {
+                        $s = $toMin($bp->{$colStart} ?? null);
+                        $e = $toMin($bp->{$colEnd}   ?? null);
+                        if ($s !== null && $e !== null) {
+                            if ($e < $s) $e += 24 * 60; // 跨日休憩
+                            $sum += max(0, $e - $s);
+                        }
+                    }
+                }
+                $breakMin = $sum;
+            }
+
+            // 勤務合計：null だけでなく 0 でも出退勤が両方あれば再計算
+            $needRecalcWork =
+                $workMin === null ||
+                ($workMin == 0 && $a->clock_in_at && $a->clock_out_at);
+
+            if ($needRecalcWork) {
+                $inMin  = $toMin($a->clock_in_at);
+                $outMin = $toMin($a->clock_out_at);
+                if ($inMin !== null && $outMin !== null) {
+                    if ($outMin < $inMin) $outMin += 24 * 60; // 跨日
+                    $workMin = max(0, ($outMin - $inMin) - (int)$breakMin);
+                }
+            }
 
             return [
                 'id'          => $a->id,
