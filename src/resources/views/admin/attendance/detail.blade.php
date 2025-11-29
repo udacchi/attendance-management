@@ -21,7 +21,7 @@
 <div class="att-detail">
   <div class="att-detail__inner">
 
-    <h1 class="page-title">勤怠詳細（管理者）</h1>
+    <h1 class="page-title">勤怠詳細</h1>
 
     {{-- バリデーション等 --}}
     @if ($errors->any())
