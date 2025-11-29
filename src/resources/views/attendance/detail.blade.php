@@ -75,7 +75,22 @@
             @error('clock_pair')  <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
       
             {{-- 休憩 --}}
-            @foreach ($record['breaks'] as $idx => $b)
+            @php
+              $breaks = $record['breaks'] ?? [];
+              $isEmptyBreak = function($b){
+                  $s = trim($b['start'] ?? '');
+                  $e = trim($b['end'] ?? '');
+                  // '--:--' や null, '' を未入力として扱う
+                  return ($s === '' || $s === '--:--') && ($e === '' || $e === '--:--');
+              };
+            
+              // 承認待ちのときだけ空行を除外
+              if ($isPending) {
+                  $breaks = array_values(array_filter($breaks, fn($b) => ! $isEmptyBreak($b)));
+              }
+            @endphp
+
+            @foreach ($breaks as $idx => $b)
               <tr>
                 <th>休憩{{ $idx + 1 }}</th>
                 <td class="cell--inputs">
@@ -89,7 +104,7 @@
                 </td>
               </tr>
             @endforeach
-            
+
             @error('breaks_range') <tr><td colspan="4" class="cell--error">{{ $message }}</td></tr> @enderror
       
             {{-- 備考（インデント空白を入れない） --}}
