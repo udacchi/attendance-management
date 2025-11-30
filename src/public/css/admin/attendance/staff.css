@@ -40,45 +40,73 @@ body{ background:var(--canvas); }
   border-radius:2px;
 }
 
-/* 月ナビ（3分割ピル） */
+/* ===== 月ナビ（ピル型・中央強調） ===== */
 .month-nav{
-  display:grid;
+  display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items:center;
-  gap:16px;
-  background:var(--white);
-  border-radius:12px;
-  padding:10px 14px;
-  width:100%;
-  margin:16px auto 24px;
+  align-items: center;
+  gap: 16px;
+
+  width: min(900px, 100%);
+  margin: 18px auto 48px;
+
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-top: 48px;
 }
+
+/* 左右ボタン：落ち着いた色で */
 .month-nav__btn{
-  display:inline-flex;
-  align-items:center;
-  gap:.4em;
-  padding:8px 10px;
-  border-radius:8px;
-  text-decoration:none;
-  color:#111;
-  font-weight:700;
+  display: inline-flex;
+  align-items: center;
+  gap: .5em;
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text2);
+  font-weight: 700;
+  font-size: 16px;
 }
-.month-nav__btn--right{ justify-self:end; }
-.month-nav__arrow{ font-size:14px; }
+.month-nav__btn--right{ justify-self: end; }
+.month-nav__arrow{ font-size: 16px; line-height: 1; }
+
+/* 中央：アイコン */
 .month-nav__center{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 28px;
 }
-.month-nav__icon{ font-size:16px; color:#111; }
+
+.month-nav__icon{
+  width: 28px;
+  height: 28px;
+  display: inline-block;
+  line-height: 1;
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.month-nav__display{
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: .3px;
+  color: var(--text1);
+  cursor: pointer;
+  user-select: none;
+}
+
 .month-nav__input{
-  border:none;
-  background:transparent;
-  font-weight:700;
-  font-size:14px;
-  padding:6px 8px;
-  border-radius:6px;
-  color:#111;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+  outline: none;
 }
 
 /* テーブル */

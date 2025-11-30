@@ -32,16 +32,47 @@
         <span class="month-nav__arrow">&#8592;</span> 前月
       </a>
 
-      <form class="month-nav__center" action="{{ route('admin.attendance.staff', ['id' => $user->id]) }}" method="get">
-        <i class="month-nav__icon fa-regular fa-calendar"></i>
-        <input
-          class="month-nav__input"
-          type="month"
-          name="month"
-          value="{{ $month->format('Y-m') }}"
-          onchange="this.form.submit()"
-        >
+      <form id="monthNavForm" class="month-nav__center" action="{{ route('attendance.list') }}" method="get">
+        {{-- ▼ カレンダーアイコン --}}
+        <svg class="month-nav__icon" viewBox="0 0 24 24" aria-hidden="true">
+          <!-- 外枠 -->
+          <rect x="3" y="4.5" width="18" height="16" rx="2.5" ry="2.5"
+                fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <!-- 綴じ具 -->
+          <line x1="8" y1="4.5" x2="8" y2="2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="16" y1="4.5" x2="16" y2="2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- 仕切り線 -->
+          <line x1="3" y1="8.5" x2="21" y2="8.5" stroke="currentColor" stroke-width="1.6"/>
+          <!-- マス目（3×2） -->
+          <rect x="5.5"  y="10.5" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="10.5" y="10.5" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="15.5" y="10.5" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="5.5"  y="14.9" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="10.5" y="14.9" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="15.5" y="14.9" width="4" height="3.4" rx="0.6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <!-- チェック（2つ） -->
+          <path d="M11.2 12.2l1.0 1.0 2.0-2.0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M6.2 16.6l1.0 1.0 2.0-2.0"  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      
+        <span id="monthDisplay" class="month-nav__display">{{ $month->isoformat('YYYY年M月') }}</span>
+      
+        <input id="monthPicker" class="month-nav__input" type="month" name="month"
+               value="{{ $month->format('Y-m') }}" onchange="this.form.submit()">
       </form>
+      
+      <script>
+      (() => {
+        const form  = document.getElementById('monthNavForm');
+        const input = document.getElementById('monthPicker');
+        form.addEventListener('click', (e) => {
+          if (e.target.closest('.month-nav__icon') || e.target.closest('.month-nav__display')) {
+            if (typeof input.showPicker === 'function') input.showPicker();
+            else input.focus();
+          }
+        });
+      })();
+      </script>
 
       <a class="month-nav__btn month-nav__btn--right" href="{{ route('admin.attendance.staff', ['id' => $user->id, 'month' => $nextMonth->format('Y-m')]) }}">
         翌月 <span class="month-nav__arrow">&#8594;</span>
