@@ -10,58 +10,59 @@ class AttendanceUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // 管理ガードでログインしていればOK（運用に合わせて調整可）
         return auth('admin')->check() || auth()->check();
     }
 
     public function rules(): array
     {
         return [
-            'clock_in'      => ['nullable', 'date_format:H:i'],
-            'clock_out'     => ['nullable', 'date_format:H:i'],
-            'break1_start'  => ['nullable', 'date_format:H:i'],
-            'break1_end'    => ['nullable', 'date_format:H:i'],
-            'break2_start'  => ['nullable', 'date_format:H:i'],
-            'break2_end'    => ['nullable', 'date_format:H:i'],
-            // ★ テストの想定に合わせて「未入力でも通す」
-            'note'          => ['nullable', 'string', 'max:255'],
+            'date'               => ['required', 'date'],
+            'clock_in'           => ['nullable', 'date_format:H:i'],
+            'clock_out'          => ['nullable', 'date_format:H:i'],
+
+            // 休憩は配列 + H:i（個別エラーは立つが Blade では表示しない）
+            'breaks'             => ['sometimes', 'array'],
+            'breaks.*.start'     => ['nullable', 'date_format:H:i'],
+            'breaks.*.end'       => ['nullable', 'date_format:H:i'],
+
+            'note'               => ['required', 'string'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'clock_in.date_format'   => '時刻はHH:MM形式で入力してください',
-            'clock_out.date_format'  => '時刻はHH:MM形式で入力してください',
-            'break1_start.date_format' => '時刻はHH:MM形式で入力してください',
-            'break1_end.date_format'   => '時刻はHH:MM形式で入力してください',
-            'break2_start.date_format' => '時刻はHH:MM形式で入力してください',
-            'break2_end.date_format'   => '時刻はHH:MM形式で入力してください',
-            'note.max'               => '備考は255文字以内で入力してください',
+            'date.required'              => '日付が取得できませんでした',
+            'date.date'                  => '日付の形式が不正です',
+
+            // （個別は立っても Blade で出さない）
+            'clock_in.date_format'       => '出勤時間が不適切な値です',
+            'clock_out.date_format'      => '退勤時間が不適切な値です',
+            'breaks.*.start.date_format' => '休憩時間が不適切な値です',
+            'breaks.*.end.date_format'   => '休憩時間が不適切な値です',
+
+            'note.required'              => '備考を記入してください',
         ];
     }
 
     protected function prepareForValidation(): void
     {
-        $breaks = $this->input('breaks', []);
+        // 旧UI（break1_*, break2_*）を breaks[] に取り込み
+        $breaks = (array) $this->input('breaks', []);
 
-        $addPair = function ($s, $e) use (&$breaks) {
+        $add = function ($s, $e) use (&$breaks) {
             $s = $s !== null ? trim((string)$s) : null;
             $e = $e !== null ? trim((string)$e) : null;
-            if ($s === null && $e === null) return;
-            if ($s === ''   && $e === '')   return;
+            if (($s ?? '') === '' && ($e ?? '') === '') return;
             $breaks[] = ['start' => $s, 'end' => $e];
         };
 
-        $addPair($this->input('break1_start'), $this->input('break1_end'));
-        $addPair($this->input('break2_start'), $this->input('break2_end'));
+        $add($this->input('break1_start'), $this->input('break1_end'));
+        $add($this->input('break2_start'), $this->input('break2_end'));
 
         $this->merge(['breaks' => $breaks]);
     }
 
-    /**
-     * 相関チェック（退勤より後の休憩開始/終了など）
-     */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($v) {
@@ -70,9 +71,9 @@ class AttendanceUpdateRequest extends FormRequest
 
             $tz = config('app.timezone', 'Asia/Tokyo');
             $toDT = function (?string $hm) use ($date, $tz) {
-                if (!$hm) return null;
+                if (!$hm || strpos($hm, ':') === false) return null;
                 try {
-                    return \Carbon\Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $hm, $tz)->second(0);
+                    return Carbon::createFromFormat('Y-m-d H:i', "$date $hm", $tz)->second(0);
                 } catch (\Throwable $e) {
                     return null;
                 }
@@ -80,64 +81,47 @@ class AttendanceUpdateRequest extends FormRequest
 
             $in  = $toDT($this->input('clock_in'));
             $out = $toDT($this->input('clock_out'));
+            $errors = $v->errors();
 
-            // ① 出勤 > 退勤 はNG（両方に同じメッセージ）
-            if ($in && $out && $in->gt($out)) {
-                $msg = '出勤時間もしくは退勤時間が不適切な値です';
-                $v->errors()->add('clock_in',  $msg);
-                $v->errors()->add('clock_out', $msg);
+            // ===== 出勤・退勤：集約キー clock_pair だけ追加 =====
+            $pairInvalid = ($in && $out && $in->gt($out));
+            $formatInvalid = $errors->has('clock_in') || $errors->has('clock_out');
+
+            if ($pairInvalid || $formatInvalid) {
+                if (!$errors->has('clock_pair')) {
+                    $errors->add('clock_pair', '出勤時間もしくは退勤時間が不適切な値です');
+                }
             }
 
-            // prepareForValidation 済みの breaks[] を使う
-            $breaks = (array)$this->input('breaks', []);
-            foreach ($breaks as $idx => $row) {
-                $startRaw = isset($row['start']) ? trim((string)$row['start']) : '';
-                $endRaw   = isset($row['end'])   ? trim((string)$row['end'])   : '';
+            // ===== 休憩：集約キー breaks_range だけ追加 =====
+            $breaks = (array) $this->input('breaks', []);
+            $rangeInvalid = false;
+            $overOut      = false;
 
-                // 完全空行はスキップ
-                if ($startRaw === '' && $endRaw === '') continue;
-
+            foreach ($breaks as $row) {
                 $s = $toDT($row['start'] ?? null);
                 $e = $toDT($row['end']   ?? null);
+                if (!$s && !$e) continue; // 空行
 
-                // ここからエラーフラグを積み上げて最後にキーへ付与
-                $errStart = false;
-                $errEnd   = false;
-                $msgStart = '休憩時間が不適切な値です';
-                $msgEnd   = '休憩時間もしくは退勤時間が不適切な値です';
-
-                // 型不正/片方欠落
-                if (!$s || !$e) {
-                    $errStart = true;
-                    $errEnd   = true;
-                    $msgStart = '休憩時間が不適切な値です';
-                    $msgEnd   = '休憩時間が不適切な値です';
-                } else {
-                    // ② 終了は開始より後
-                    if ($e->lte($s)) {
-                        $errEnd = true;
-                    }
-                    // ③ 開始は出勤〜退勤の範囲内
-                    if ($in && $s->lt($in)) {
-                        $errStart = true;
-                    }
-                    if ($out && $s->gt($out)) {
-                        $errStart = true;
-                    }
-                    // ④ 終了は退勤を超えない
-                    if ($out && $e->gt($out)) {
-                        $errEnd = true;
-                    }
+                // 片方欠落 or 並び不正
+                if (!$s || !$e || $e->lte($s)) {
+                    $rangeInvalid = true;
+                    continue;
                 }
+                if ($in  && $s->lt($in))  $rangeInvalid = true;
+                if ($out && $s->gt($out)) $rangeInvalid = true;
+                if ($out && $e->gt($out)) {
+                    $rangeInvalid = true;
+                    $overOut = true;
+                }
+            }
 
-                // 標準（配列）キーに付与
-                if ($errStart) $v->errors()->add("breaks.$idx.start", $msgStart);
-                if ($errEnd)   $v->errors()->add("breaks.$idx.end",   $msgEnd);
-
-                // ★ テスト互換用ミラー：最初の休憩行 idx=0 は break1_* にも同じエラーを付ける
-                if ($idx === 0) {
-                    if ($errStart) $v->errors()->add('break1_start', $msgStart);
-                    if ($errEnd)   $v->errors()->add('break1_end',   $msgEnd);
+            if ($rangeInvalid) {
+                $msg = $overOut
+                    ? '休憩時間もしくは退勤時間が不適切な値です'
+                    : '休憩時間が不適切な値です';
+                if (!$errors->has('breaks_range')) {
+                    $errors->add('breaks_range', $msg);
                 }
             }
         });

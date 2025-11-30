@@ -18,15 +18,6 @@
 
     <h1 class="page-title">勤怠詳細</h1>
 
-    {{-- フラッシュ/エラー --}}
-    @if (session('status')) <div class="alert alert-success">{{ session('status') }}</div> @endif
-    @if (session('error'))  <div class="alert alert-danger">{{ session('error') }}</div>  @endif
-    @if ($errors->any())
-      <div class="alert alert-danger">
-        <ul>@foreach ($errors->all() as $err)<li>{{ $err }}</li>@endforeach</ul>
-      </div>
-    @endif
-
     <form method="POST"
           action="{{ route('admin.attendance.updateByUserDate', ['user' => $user->id]) }}?date={{ $date->toDateString() }}">
       @csrf
@@ -61,8 +52,7 @@
                        value="{{ old('clock_out', $record['clock_out'] ?? '') }}" {{ $isPending ? 'readonly' : '' }}>
               </td>
             </tr>
-            @error('clock_in')  <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
-            @error('clock_out') <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
+            @error('clock_pair')  <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
 
             {{-- 休憩（承認待ちは空行を除外） --}}
             @php
@@ -86,9 +76,9 @@
                          value="{{ old("breaks.$idx.end", $b['end'] ?? '') }}" {{ $isPending ? 'readonly' : '' }}>
                 </td>
               </tr>
-              @error("breaks.$idx.start") <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
-              @error("breaks.$idx.end")   <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
             @endforeach
+
+            @error('breaks_range') <tr><td colspan="4" class="cell--error">{{ $message }}</td></tr> @enderror
 
             {{-- 備考 --}}
             <tr>
