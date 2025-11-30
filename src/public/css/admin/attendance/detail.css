@@ -198,3 +198,25 @@ body{ background: var(--canvas); }
   font-size: .95rem;
   color: #ff0000; 
 }
+
+/* ===========================
+   エラーメッセージ (赤色)
+   =========================== */
+
+   .error,
+   .cell--error {
+     color: #ff0000;                /* 赤文字 */
+     background: #fdecea;           /* 薄い赤背景 */
+     border: 1px solid #f2b8b5;     /* 赤の境界線 */
+     border-radius: 5px;
+     padding: 10px 14px;
+     font-size: 14px;
+     font-weight: 400;
+   }
+   
+   /* テーブル内の行として出る場合の調整 */
+   .detail-table .error,
+   .detail-table .cell--error {
+     text-align: left;
+     padding: 16px 36px;
+   }
