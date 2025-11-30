@@ -17,36 +17,61 @@ class AttendanceController extends Controller
         $user = Auth::guard('web')->user();
         if (!$user) abort(401);
 
-        $tz  = config('app.timezone', 'Asia/Tokyo');
-        $now = Carbon::now($tz);
+        $tz   = config('app.timezone', 'Asia/Tokyo');
+        $now  = \Carbon\Carbon::now($tz)->second(0);
+        $todayStr = $now->toDateString();
 
-        // 1) 出勤済み＆未退勤があれば最優先
-        $open = AttendanceDay::where('user_id', $user->id)
+        // 1) 未退勤のオープン勤務（跨日も含め最優先）
+        $open = \App\Models\AttendanceDay::with('breaks')
+            ->where('user_id', $user->id)
             ->whereNotNull('clock_in_at')
             ->whereNull('clock_out_at')
             ->orderByDesc('work_date')
             ->first();
 
-        // 2) なければ直近のレコード
-        $day = $open ?: AttendanceDay::where('user_id', $user->id)
-            ->orderByDesc('work_date')
+        // 2) 今日のレコード
+        $today = \App\Models\AttendanceDay::with('breaks')
+            ->where('user_id', $user->id)
+            ->whereDate('work_date', $todayStr)
             ->first();
 
         $state = 'before';
         $displayTime = $now->format('H:i');
 
-        if ($day) {
+        $applyState = function ($day) use ($tz, &$state, &$displayTime) {
+            if (!$day) return;
             if ($day->clock_out_at) {
                 $state = 'after';
-            } else {
-                $hasOpenBreak = $day->breaks()->whereNull('ended_at')->exists();
-                if ($hasOpenBreak) {
-                    $state = 'break';
-                } elseif ($day->clock_in_at) {
-                    $state = 'working';
-                    $displayTime = Carbon::parse($day->clock_in_at, $tz)->format('H:i');
-                }
+                // 退勤済みのときは現在時刻を表示（またはお好みで退勤時刻でもOK）
+                $displayTime = \Carbon\Carbon::now($tz)->format('H:i');
+                return;
             }
+            $hasOpenBreak = $day->breaks()->whereNull('ended_at')->exists();
+            if ($hasOpenBreak) {
+                $state = 'break';
+                $displayTime = \Carbon\Carbon::now($tz)->format('H:i');
+                return;
+            }
+            if ($day->clock_in_at) {
+                $state = 'working';
+                // 出勤中は出勤時刻を表示
+                $displayTime = \Carbon\Carbon::parse($day->clock_in_at, $tz)->format('H:i');
+                return;
+            }
+            $state = 'before';
+            $displayTime = \Carbon\Carbon::now($tz)->format('H:i');
+        };
+
+        if ($open) {
+            // 跨日勤務など、未退勤があるときはそれをそのまま表示
+            $applyState($open);
+        } elseif ($today) {
+            // きょうのレコードがあるときだけ、その状態を採用
+            $applyState($today);
+        } else {
+            // きょうのレコードが無ければ「before」で新規出勤できる
+            $state = 'before';
+            $displayTime = $now->format('H:i');
         }
 
         return view('attendance.stamp', [
@@ -55,6 +80,7 @@ class AttendanceController extends Controller
             'displayTime' => $displayTime,
         ]);
     }
+
 
     /** 出勤 */
     public function clockIn()
