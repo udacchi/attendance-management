@@ -258,12 +258,35 @@ class AttendanceController extends Controller
             ? Carbon::parse($request->query('date'), $tz)->startOfDay()
             : Carbon::now($tz)->startOfDay();
 
-        // 対象日の勤怠（存在しなければ作成）
+        // 対象日の勤怠
         $attendanceDay = AttendanceDay::firstOrCreate(
             ['user_id' => $user->id, 'work_date' => $date->toDateString()],
             []
         );
-        $attendanceDay->load('breakPeriods');
+
+        // ---- 休憩リレーション＆列名の自動判定（breakPeriods / breaks 両対応）----
+        $relName = method_exists($attendanceDay, 'breakPeriods') ? 'breakPeriods'
+            : (method_exists($attendanceDay, 'breaks') ? 'breaks' : null);
+
+        if ($relName) $attendanceDay->load($relName);
+
+        // テーブル名と列名を推測
+        $tbl = 'break_periods';
+        if (
+            $attendanceDay->$relName instanceof \Illuminate\Database\Eloquent\Collection &&
+            $attendanceDay->$relName->first()
+        ) {
+            $tbl = $attendanceDay->$relName->first()->getTable();
+        } elseif (Schema::hasTable('breaks')) {
+            $tbl = 'breaks';
+        }
+
+        $colStart = Schema::hasColumn($tbl, 'break_start_at') ? 'break_start_at'
+            : (Schema::hasColumn($tbl, 'started_at') ? 'started_at'
+                : (Schema::hasColumn($tbl, 'start_at') ? 'start_at' : null));
+        $colEnd   = Schema::hasColumn($tbl, 'break_end_at') ? 'break_end_at'
+            : (Schema::hasColumn($tbl, 'ended_at') ? 'ended_at'
+                : (Schema::hasColumn($tbl, 'end_at') ? 'end_at' : null));
 
         // --- まず「通常の値」で record を作る ---
         $record = [
@@ -275,18 +298,18 @@ class AttendanceController extends Controller
             'breaks'    => [],
         ];
 
-        foreach ($attendanceDay->breakPeriods as $bp) {
-            $record['breaks'][] = [
-                'start' => $bp->break_start_at ? $bp->break_start_at->format('H:i') : '',
-                'end'   => $bp->break_end_at   ? $bp->break_end_at->format('H:i') : '',
-            ];
+        if ($relName && $colStart && $colEnd) {
+            foreach ($attendanceDay->$relName as $bp) {
+                $record['breaks'][] = [
+                    'start' => $bp->{$colStart} ? Carbon::parse($bp->{$colStart}, $tz)->format('H:i') : '',
+                    'end'   => $bp->{$colEnd}   ? Carbon::parse($bp->{$colEnd},   $tz)->format('H:i') : '',
+                ];
+            }
         }
         // 入力行追加
         $record['breaks'][] = ['start' => '', 'end' => ''];
 
-        // ========================================
-        // ★ pending の最新データで上書きする
-        // ========================================
+        // ---- pending の最新データで上書き（既存方針）----
         $pending = CorrectionRequest::where('attendance_day_id', $attendanceDay->id)
             ->where('status', 'pending')
             ->latest('id')
@@ -303,7 +326,7 @@ class AttendanceController extends Controller
                 if (array_key_exists('clock_out', $p)) $record['clock_out'] = $hm($p['clock_out']) ?? '';
                 if (array_key_exists('note', $p))      $record['note']      = (string)($p['note'] ?? '');
 
-                if (isset($p['breaks']) && is_array($p['breaks'])) {
+                if (!empty($p['breaks']) && is_array($p['breaks'])) {
                     $record['breaks'] = [];
                     foreach ($p['breaks'] as $b) {
                         $record['breaks'][] = [
@@ -314,7 +337,6 @@ class AttendanceController extends Controller
                     $record['breaks'][] = ['start' => '', 'end' => ''];
                 }
             } else {
-                // payload 無し → proposed_* を反映
                 $record['clock_in']  = $pending->proposed_clock_in_at
                     ? Carbon::parse($pending->proposed_clock_in_at, $tz)->format('H:i')
                     : $record['clock_in'];
@@ -325,7 +347,6 @@ class AttendanceController extends Controller
             }
         }
 
-        // ★ Blade で編集ロック/メッセージ表示に使うフラグ
         $isPending = (bool) $pending;
 
         return view('admin.attendance.detail', [
@@ -337,6 +358,7 @@ class AttendanceController extends Controller
         ]);
     }
 
+
     // 編集フォーム（user+date ベース）
     public function updateByUserDate(AttendanceUpdateRequest $request, User $user)
     {
@@ -346,11 +368,9 @@ class AttendanceController extends Controller
             ? Carbon::parse($dateStr, $tz)->startOfDay()
             : Carbon::now($tz)->startOfDay();
 
-        // ★ サーバ側でも承認待ち更新をブロック（多重防衛）
+        // 承認待ちはサーバ側でブロック
         if ($this->hasPendingCorrection($user->id, $date)) {
-            return back()
-                ->withInput()
-                ->with('error', '承認待ちのため修正はできません。');
+            return back()->withInput()->with('error', '承認待ちのため修正はできません。');
         }
 
         $attendanceDay = AttendanceDay::firstOrCreate(
@@ -358,17 +378,42 @@ class AttendanceController extends Controller
             []
         );
 
-        // ---- 入力を取り出し（HH:MM → Carbon。ここではバリデーションしない）----
+        // ---- 休憩リレーション＆列名の自動判定 ----
+        $relName = method_exists($attendanceDay, 'breakPeriods') ? 'breakPeriods'
+            : (method_exists($attendanceDay, 'breaks') ? 'breaks' : null);
+
+        $tbl = 'break_periods';
+        if ($relName) {
+            $attendanceDay->load($relName);
+            if ($attendanceDay->$relName->first()) {
+                $tbl = $attendanceDay->$relName->first()->getTable();
+            } elseif (Schema::hasTable('breaks')) {
+                $tbl = 'breaks';
+            }
+        } elseif (Schema::hasTable('breaks')) {
+            $tbl = 'breaks';
+        }
+
+        $colStart = Schema::hasColumn($tbl, 'break_start_at') ? 'break_start_at'
+            : (Schema::hasColumn($tbl, 'started_at') ? 'started_at'
+                : (Schema::hasColumn($tbl, 'start_at') ? 'start_at' : null));
+        $colEnd   = Schema::hasColumn($tbl, 'break_end_at') ? 'break_end_at'
+            : (Schema::hasColumn($tbl, 'ended_at') ? 'ended_at'
+                : (Schema::hasColumn($tbl, 'end_at') ? 'end_at' : null));
+
+        // ---- 入力(HH:MM) -> Carbon 変換 ----
         $toDT = function (?string $hm) use ($date, $tz) {
-            return $hm ? Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' ' . $hm, $tz)->second(0) : null;
+            return ($hm && strpos($hm, ':') !== false)
+                ? Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' ' . $hm, $tz)->second(0)
+                : null;
         };
         $in  = $toDT($request->input('clock_in'));
         $out = $toDT($request->input('clock_out'));
 
-        // breaks[] 形式 or break1_*/break2_* 形式のどちらでも受ける
+        // breaks[] 形式 or break1_*/break2_* 形式のどちらでも受ける（空行は除外）
         $norm = [];
         $rawBreaks = (array) $request->input('breaks', []);
-        if (!empty($rawBreaks)) {
+        if ($rawBreaks) {
             foreach ($rawBreaks as $row) {
                 $s = $row['start'] ?? null;
                 $e = $row['end']   ?? null;
@@ -390,26 +435,18 @@ class AttendanceController extends Controller
             }
         }
 
-        DB::transaction(function () use ($attendanceDay, $in, $out, $request, $tz, $date, $user, $norm) {
+        DB::transaction(function () use ($attendanceDay, $in, $out, $request, $tz, $date, $user, $norm, $relName, $colStart, $colEnd) {
             // 変更前スナップショット
-            $attendanceDay->load('breakPeriods');
-            $tbl = 'break_periods';
-            $colStart = Schema::hasColumn($tbl, 'break_start_at') ? 'break_start_at'
-                : (Schema::hasColumn($tbl, 'started_at') ? 'started_at'
-                    : (Schema::hasColumn($tbl, 'start_at') ? 'start_at' : null));
-            $colEnd   = Schema::hasColumn($tbl, 'break_end_at') ? 'break_end_at'
-                : (Schema::hasColumn($tbl, 'ended_at') ? 'ended_at'
-                    : (Schema::hasColumn($tbl, 'end_at') ? 'end_at' : null));
+            if ($relName) $attendanceDay->load($relName);
 
             $before = [
                 'clock_in_at'  => $attendanceDay->clock_in_at,
                 'clock_out_at' => $attendanceDay->clock_out_at,
-                'breaks'       => $attendanceDay->breakPeriods?->map(function ($b) use ($colStart, $colEnd) {
-                    return [
-                        'start' => $colStart ? ($b->{$colStart} ?? null) : null,
-                        'end'   => $colEnd   ? ($b->{$colEnd}   ?? null) : null,
-                    ];
-                })->values()->all() ?? [],
+                'breaks'       => ($relName && $colStart && $colEnd)
+                    ? $attendanceDay->$relName?->map(function ($b) use ($colStart, $colEnd) {
+                        return ['start' => $b->{$colStart} ?? null, 'end' => $b->{$colEnd} ?? null];
+                    })->values()->all()
+                    : [],
             ];
 
             // 本体更新
@@ -418,32 +455,33 @@ class AttendanceController extends Controller
             $attendanceDay->note         = (string)$request->input('note', '');
             $attendanceDay->save();
 
-            // 休憩差し替え
-            if (method_exists($attendanceDay, 'breakPeriods')) {
-                $attendanceDay->breakPeriods()->delete();
-                if ($colStart && $colEnd) {
-                    foreach ($norm as [$s, $e]) {
-                        $attendanceDay->breakPeriods()->create([
-                            $colStart => $s->copy(),
-                            $colEnd   => $e->copy(),
-                        ]);
-                    }
+            // 休憩差し替え（breaks でも breakPeriods でもOK）
+            if ($relName && $colStart && $colEnd) {
+                // 既存削除
+                $attendanceDay->$relName()->delete();
+                // 再作成
+                foreach ($norm as [$s, $e]) {
+                    $attendanceDay->$relName()->create([
+                        $colStart => $s->copy(),
+                        $colEnd   => $e->copy(),
+                    ]);
                 }
             }
 
             // 合計再計算
-            $attendanceDay->load('breakPeriods');
+            if ($relName) $attendanceDay->load($relName);
             $breakSeconds = 0;
-            foreach ($attendanceDay->breakPeriods as $bp) {
-                $s = ($colStart && $bp->{$colStart}) ? Carbon::parse($bp->{$colStart}, $tz) : null;
-                $e = ($colEnd   && $bp->{$colEnd})   ? Carbon::parse($bp->{$colEnd},   $tz) : null;
-                if ($s && $e && $e->gt($s)) $breakSeconds += $e->diffInSeconds($s);
+            if ($relName && $colStart && $colEnd) {
+                foreach ($attendanceDay->$relName as $bp) {
+                    $s = $bp->{$colStart} ? Carbon::parse($bp->{$colStart}, $tz) : null;
+                    $e = $bp->{$colEnd}   ? Carbon::parse($bp->{$colEnd},   $tz) : null;
+                    if ($s && $e && $e->gt($s)) $breakSeconds += $e->diffInSeconds($s);
+                }
             }
 
             $adjustedOut = $out ? $out->copy() : null;
-            if ($in && $adjustedOut && $adjustedOut->lt($in)) {
-                $adjustedOut->addDay(); // 跨日ケア
-            }
+            if ($in && $adjustedOut && $adjustedOut->lt($in)) $adjustedOut->addDay(); // 跨日ケア
+
             $workSeconds = ($in && $adjustedOut) ? max(0, $adjustedOut->diffInSeconds($in) - $breakSeconds) : 0;
 
             if ($attendanceDay->isFillable('total_break_minutes')) {
@@ -454,17 +492,16 @@ class AttendanceController extends Controller
             }
             if ($attendanceDay->isDirty()) $attendanceDay->save();
 
-            // 監査ログ（存在すれば）
+            // 監査ログ（存在時のみ）
             if (class_exists(\App\Models\CorrectionLog::class) && Schema::hasTable('correction_logs')) {
                 $after = [
                     'clock_in_at'  => $attendanceDay->clock_in_at,
                     'clock_out_at' => $attendanceDay->clock_out_at,
-                    'breaks'       => $attendanceDay->breakPeriods?->map(function ($b) use ($colStart, $colEnd) {
-                        return [
-                            'start' => $colStart ? ($b->{$colStart} ?? null) : null,
-                            'end'   => $colEnd   ? ($b->{$colEnd}   ?? null) : null,
-                        ];
-                    })->values()->all() ?? [],
+                    'breaks'       => ($relName && $colStart && $colEnd)
+                        ? $attendanceDay->$relName?->map(function ($b) use ($colStart, $colEnd) {
+                            return ['start' => $b->{$colStart} ?? null, 'end' => $b->{$colEnd} ?? null];
+                        })->values()->all()
+                        : [],
                 ];
 
                 $payload = [
@@ -480,8 +517,7 @@ class AttendanceController extends Controller
                 }
                 try {
                     \App\Models\CorrectionLog::create($payload);
-                } catch (\Throwable $e) {
-                    // noop
+                } catch (\Throwable $e) { /* noop */
                 }
             }
         });
