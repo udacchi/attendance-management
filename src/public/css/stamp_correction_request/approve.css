@@ -86,7 +86,7 @@ body { background: var(--canvas); }
 }
 
 /* “囲い”は消したまま（文字だけ表示） */
-.chip-input{
+.chip-text{
   min-width: 120px;
   height: 36px;
   padding: 8px 10px;
@@ -97,7 +97,7 @@ body { background: var(--canvas); }
   font-weight: 700;
   text-align: center;
 }
-.chip-input:disabled{ opacity: 1; }
+.chip-text:disabled{ opacity: 1; }
 
 .note-box{
   min-width: 400px;

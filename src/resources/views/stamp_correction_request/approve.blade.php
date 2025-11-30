@@ -8,8 +8,25 @@
 
 @section('content')
 @php
-  $tz = config('app.timezone', 'Asia/Tokyo');
+  $tz        = config('app.timezone', 'Asia/Tokyo');
   $isPending = $isPending ?? (($req->status ?? null) === 'pending');
+
+  // --:-- を空文字に正規化して表示専用の配列を用意
+  $normHM = function ($v) {
+      $v = (string)($v ?? '');
+      return $v === '--:--' ? '' : $v;
+  };
+
+  $clockIn  = $normHM($record['clock_in']  ?? '');
+  $clockOut = $normHM($record['clock_out'] ?? '');
+
+  $breaks = [];
+  foreach (($record['breaks'] ?? []) as $b) {
+      $breaks[] = [
+          'start' => $normHM($b['start'] ?? ''),
+          'end'   => $normHM($b['end']   ?? ''),
+      ];
+  }
 @endphp
 
 <div class="approve-page">
@@ -20,41 +37,46 @@
     <div class="approve-card">
       <table class="approve-table">
         <tbody>
+          {{-- 名前 --}}
           <tr>
             <th>名前</th>
             <td colspan="3" class="cell--center">{{ $record['name'] ?? '' }}</td>
           </tr>
+
+          {{-- 日付 --}}
           <tr>
             <th>日付</th>
             <td class="cell--center cell--ym">{{ optional($date)->isoFormat('YYYY年') }}</td>
             <td class="cell--center cell--md" colspan="2">{{ optional($date)->isoFormat('M月D日') }}</td>
           </tr>
+
+          {{-- 出勤・退勤（入力欄は使わず、テキストで表示。未入力は空白） --}}
           <tr>
             <th>出勤・退勤</th>
             <td class="cell--inputs">
-              <input class="chip-input" type="time" name="clock_in"
-                     value="{{ $record['clock_in'] ?? '' }}" readonly>
+              <span class="chip-text">{{ $clockIn }}</span>
             </td>
             <td class="cell--tilde">〜</td>
             <td class="cell--inputs">
-              <input class="chip-input" type="time" name="clock_out"
-                     value="{{ $record['clock_out'] ?? '' }}" readonly>
+              <span class="chip-text">{{ $clockOut }}</span>
             </td>
           </tr>
 
-          @foreach (($record['breaks'] ?? []) as $i => $b)
+          {{-- 休憩（未入力は空白表示。--:-- は空に変換済み） --}}
+          @foreach ($breaks as $i => $b)
             <tr>
               <th class="cell">休憩{{ $i + 1 }}</th>
               <td class="cell--inputs">
-                <input class="chip-input" type="time" value="{{ $b['start'] ?? '' }}" readonly>
+                <span class="chip-text">{{ $b['start'] }}</span>
               </td>
               <td class="cell--tilde">〜</td>
               <td class="cell--inputs">
-                <input class="chip-input" type="time" value="{{ $b['end'] ?? '' }}" readonly>
+                <span class="chip-text">{{ $b['end'] }}</span>
               </td>
             </tr>
           @endforeach
 
+          {{-- 備考（表示専用） --}}
           <tr>
             <th>備考</th>
             <td colspan="3" class="cell--inputs">
