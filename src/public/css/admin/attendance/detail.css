@@ -151,3 +151,50 @@ body{ background: var(--canvas); }
 .detail-table input[type="time"]::-webkit-calendar-picker-indicator {
   display: none;
 }
+
+/* ===== 承認待ち表示（入力欄→テキスト風） ===== */
+
+/* 入力欄の枠・背景・影を消す */
+.detail-card.is-pending .chip-input,
+.detail-card.is-pending .note-box {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  padding: 0;
+  color: #1a1a1a; /* 文字色は通常の本文色 */
+}
+
+/* time入力をテキストと同じ横幅に寄せる */
+.detail-card.is-pending .chip-input[type="time"] {
+  width: auto;
+  min-width: 6ch;      /* “02:31” 程度 */
+  text-align: center;
+  cursor: default;     /* クリックしても入力っぽく見せない */
+}
+
+/* テキストエリアも純テキスト風に */
+.detail-card.is-pending .note-box {
+  min-height: 1.8em;
+  resize: none;
+  white-space: pre-wrap;
+}
+
+/* ブラウザの時刻ピッカーやスピンボタンを非表示（見た目をテキストに） */
+.detail-card.is-pending input[type="time"]::-webkit-calendar-picker-indicator,
+.detail-card.is-pending input[type="time"]::-webkit-inner-spin-button {
+  display: none;
+}
+.detail-card.is-pending input[type="time"] {
+  -moz-appearance: textfield;
+  appearance: none;
+}
+
+/* 注意文：右寄せ・赤 */
+.pending-note{
+  margin: 12px auto 0;
+  padding-right: 80px; 
+  text-align: right; 
+  font-size: .95rem;
+  color: #ff0000; 
+}
