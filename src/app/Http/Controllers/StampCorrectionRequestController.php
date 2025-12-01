@@ -43,8 +43,8 @@ class StampCorrectionRequestController extends Controller
 
         return view('stamp_correction_request.list', [
             'requests' => $requests,
-            'isAdmin'  => $isAdmin,
-            'status'   => $status,
+            'status'   => $status,     // 'pending' or 'approved'
+            'isAdmin'  => auth('admin')->check(),
         ]);
     }
 

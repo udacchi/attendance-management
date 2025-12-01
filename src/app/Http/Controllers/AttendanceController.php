@@ -417,16 +417,20 @@ class AttendanceController extends Controller
 
         $tz = config('app.timezone', 'Asia/Tokyo');
         $dateStr = $request->query('date');
-        if (!$dateStr) return redirect()->route('attendance.list')->with('error', '日付が指定されていません。');
+        if (!$dateStr) {
+            return redirect()->route('attendance.list')
+                ->with('error', '日付が指定されていません。');
+        }
 
         try {
-            $target = \Carbon\Carbon::createFromFormat('Y-m-d', $dateStr, $tz)->startOfDay();
+            $target = \Carbon\Carbon::createFromFormat('Y-m-d', $dateStr, $tz)
+                ->startOfDay();
         } catch (\Throwable $e) {
             abort(404);
         }
 
         // 元データ
-        $day = \App\Models\AttendanceDay::with('breaks')
+        $day = AttendanceDay::with('breaks')
             ->where('user_id', $user->id)
             ->whereDate('work_date', $target->toDateString())
             ->first();
@@ -434,8 +438,12 @@ class AttendanceController extends Controller
         $record = [
             'user_id'   => $user->id,
             'name'      => $user->name,
-            'clock_in'  => $day && $day->clock_in_at  ? \Carbon\Carbon::parse($day->clock_in_at,  $tz)->format('H:i') : '',
-            'clock_out' => $day && $day->clock_out_at ? \Carbon\Carbon::parse($day->clock_out_at, $tz)->format('H:i') : '',
+            'clock_in'  => $day && $day->clock_in_at
+                ? Carbon::parse($day->clock_in_at, $tz)->format('H:i')
+                : '',
+            'clock_out' => $day && $day->clock_out_at
+                ? Carbon::parse($day->clock_out_at, $tz)->format('H:i')
+                : '',
             'note'      => $day->note ?? '',
             'breaks'    => [],
         ];
@@ -443,72 +451,101 @@ class AttendanceController extends Controller
         if ($day && $day->breaks) {
             foreach ($day->breaks as $b) {
                 $record['breaks'][] = [
-                    'start' => $b->started_at ? \Carbon\Carbon::parse($b->started_at, $tz)->format('H:i') : '',
-                    'end'   => $b->ended_at   ? \Carbon\Carbon::parse($b->ended_at,   $tz)->format('H:i') : '',
+                    'start' => $b->started_at
+                        ? Carbon::parse($b->started_at, $tz)->format('H:i')
+                        : '',
+                    'end'   => $b->ended_at
+                        ? Carbon::parse($b->ended_at, $tz)->format('H:i')
+                        : '',
                 ];
             }
         }
 
+        /* -------------------------------
+     * ★ 修正申請の状態チェック
+     * ------------------------------- */
+
+        $mode = 'normal';   // pending | approved | normal
         $isPending = false;
+
         if ($day) {
+            // 承認待ちの申請
             $pending = CorrectionRequest::where('attendance_day_id', $day->id)
                 ->where('requested_by', $user->id)
                 ->where('status', 'pending')
                 ->latest('id')
                 ->first();
 
+            // 承認済みの申請
+            $approved = CorrectionRequest::where('attendance_day_id', $day->id)
+                ->where('requested_by', $user->id)
+                ->where('status', 'approved')
+                ->latest('id')
+                ->first();
+
             if ($pending) {
+                $mode = 'pending';
                 $isPending = true;
 
-                // payload 優先で表示を上書き
+                // payload 優先で上書き
                 if (!empty($pending->payload)) {
-                    $p = is_array($pending->payload) ? $pending->payload : json_decode($pending->payload, true);
-                    $hm = fn($v) => (is_string($v) && preg_match('/^\d{1,2}:\d{2}$/', $v)) ? $v : ($v ? \Carbon\Carbon::parse($v, $tz)->format('H:i') : null);
+                    $p = is_array($pending->payload)
+                        ? $pending->payload
+                        : json_decode($pending->payload, true);
 
-                    if (!empty($p['clock_in']))  $record['clock_in']  = $hm($p['clock_in'])  ?? $record['clock_in'];
-                    if (!empty($p['clock_out'])) $record['clock_out'] = $hm($p['clock_out']) ?? $record['clock_out'];
+                    $hm = fn($v) => (is_string($v) && preg_match('/^\d{1,2}:\d{2}$/', $v))
+                        ? $v
+                        : ($v ? Carbon::parse($v, $tz)->format('H:i') : null);
+
+                    if (!empty($p['clock_in']))  $record['clock_in']  = $hm($p['clock_in']);
+                    if (!empty($p['clock_out'])) $record['clock_out'] = $hm($p['clock_out']);
                     if (array_key_exists('note', $p) && $p['note'] !== null) {
                         $record['note'] = (string)$p['note'];
                     }
 
-                    // ★ 休憩の上書き（payload.breaks があればそれを表示）
                     if (!empty($p['breaks']) && is_array($p['breaks'])) {
                         $newBreaks = [];
                         foreach ($p['breaks'] as $b) {
-                            $s = $hm($b['start'] ?? null) ?? '';
-                            $e = $hm($b['end']   ?? null) ?? '';
-                            $newBreaks[] = ['start' => $s, 'end' => $e];
+                            $newBreaks[] = [
+                                'start' => $hm($b['start'] ?? null) ?? '',
+                                'end'   => $hm($b['end']   ?? null) ?? '',
+                            ];
                         }
                         $record['breaks'] = $newBreaks;
                     }
                 } else {
-                    // proposed_* カラム運用のみの環境でも壊れない（※休憩は申請対象外だった想定）
                     if ($pending->proposed_clock_in_at) {
-                        $record['clock_in'] = \Carbon\Carbon::parse($pending->proposed_clock_in_at, $tz)->format('H:i');
+                        $record['clock_in'] = Carbon::parse($pending->proposed_clock_in_at, $tz)->format('H:i');
                     }
                     if ($pending->proposed_clock_out_at) {
-                        $record['clock_out'] = \Carbon\Carbon::parse($pending->proposed_clock_out_at, $tz)->format('H:i');
+                        $record['clock_out'] = Carbon::parse($pending->proposed_clock_out_at, $tz)->format('H:i');
                     }
                     if ($pending->proposed_note !== null) {
                         $record['note'] = $pending->proposed_note;
                     }
                 }
+            } elseif ($approved) {
+                $mode = 'approved';
             }
         }
 
-        // 仕様「休憩回数分＋空1行」を常に満たす
+        $isEditable = ($mode === 'normal');
+
         if (empty($record['breaks'])) {
             $record['breaks'] = [];
         }
         $record['breaks'][] = ['start' => '', 'end' => ''];
 
         return view('attendance.detail', [
-            'date'      => $target,
-            'record'    => $record,
-            'isPending' => $isPending, // ← 承認待ちなら readonly & 注意文（既存のBladeで制御）
-            'user'      => $user,
+            'date'       => $target,
+            'record'     => $record,
+            'user'       => $user,
+            'isPending'  => $mode === 'pending',   // 既存Blade互換
+            'isEditable' => $isEditable,           // 新：編集可否
+            'mode'       => $mode,                 // 新：状態
         ]);
     }
+
 
 
     /**

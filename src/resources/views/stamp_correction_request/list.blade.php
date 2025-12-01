@@ -1,8 +1,7 @@
 @php
+  // 既定値の補強：管理者判定は guard から自動で拾う
+  $isAdmin = ($isAdmin ?? null) ?? auth('admin')->check();
   $status  = $status ?? 'pending';
-  $layout  = ($isAdmin ?? false) ? 'layouts.admin' : 'layouts.app';
-
-  // 一覧は共通
   $listRt  = 'stamp_correction_request.list';
 @endphp
 
@@ -20,7 +19,7 @@
 
     <h1 class="page-title">申請一覧</h1>
 
-    <!-- タブ（承認待ち / 承認済み） -->
+    {{-- タブ --}}
     <div class="tabs">
       <a href="{{ route($listRt, ['status'=>'pending']) }}"
          class="tab {{ $status==='pending' ? 'is-active' : '' }}">承認待ち</a>
@@ -28,7 +27,7 @@
          class="tab {{ $status==='approved' ? 'is-active' : '' }}">承認済み</a>
     </div>
 
-    <!-- テーブル -->
+    {{-- テーブル --}}
     <div class="table-wrap">
       <table class="table">
         <thead>
@@ -44,37 +43,63 @@
         <tbody>
           @forelse ($requests as $row)
             @php
-              $tgt = $row->target_at ? \Carbon\Carbon::parse($row->target_at) : null;
-              $req = $row->requested_at ? \Carbon\Carbon::parse($row->requested_at) : null;
-              $targetDate = $tgt ? $tgt->toDateString() : null;
+              // どのカラム名でも拾えるようにフォールバック
+              $targetRaw  = $row->target_at ?? $row->work_date ?? $row->target_date ?? null;
+              $requestRaw = $row->requested_at ?? $row->created_at ?? null;
+        
+              $tgt        = $targetRaw  ? \Carbon\Carbon::parse($targetRaw)  : null;
+              $req        = $requestRaw ? \Carbon\Carbon::parse($requestRaw) : null;
+              $targetDate = $tgt?->toDateString();
+        
+              $isAdmin = ($isAdmin ?? null) ?? auth('admin')->check();
+              $isApproved = ($row->status ?? '') === 'approved';
             @endphp
             <tr>
-              <td class="cell--status">
-                {{ $row->status === 'approved' ? '承認済み' : '承認待ち' }}
-              </td>
+              <td class="cell--status">{{ $isApproved ? '承認済み' : '承認待ち' }}</td>
               <td class="cell--name">{{ $row->user_name ?? '' }}</td>
               <td class="cell--datetime">{{ $tgt ? $tgt->isoFormat('YYYY/MM/DD') : '' }}</td>
               <td class="cell--reason">{{ $row->reason ?? '' }}</td>
               <td class="cell--datetime">{{ $req ? $req->isoFormat('YYYY/MM/DD') : '' }}</td>
+        
+              {{-- ▼ ここから分岐実装 --}}
               <td class="cell--link">
-                @if(($isAdmin ?? false))
-                  {{-- 管理者：承認画面へ（共通パス版） --}}
-                  <a class="detail-link"
-                     href="{{ route('stamp_correction_request.approve', ['attendance_correct_request_id' => $row->id]) }}">
-                    詳細
-                  </a>
+                @if (!$targetDate)
+                  {{-- 対象日が取れない場合は無効表示（安全側） --}}
+                  <span class="detail-link is-disabled" aria-disabled="true">詳細</span>
                 @else
-                  {{-- 一般ユーザー：自分の勤怠詳細へ --}}
-                  @if ($targetDate)
+                  @php
+                    $uid = $row->user_id ?? $row->requested_user_id ?? null;
+                  @endphp
+              
+                  @if ($isAdmin)
+                    {{-- 管理者：承認待ちも承認済みも、全て approve 詳細ページへ --}}
                     <a class="detail-link"
-                       href="{{ route('attendance.detail', ['date' => $targetDate]) }}">
+                       href="{{ route('stamp_correction_request.approve', [
+                           'attendance_correct_request_id' => $row->id
+                       ]) }}">
                       詳細
                     </a>
                   @else
-                    詳細
+                    {{-- 一般ユーザー側の分岐はそのまま --}}
+                    @if ($isApproved)
+                      <a class="detail-link"
+                         href="{{ route('stamp_correction_request.approve', [
+                             'attendance_correct_request_id' => $row->id,
+                             'view' => 'approved'
+                         ]) }}">
+                        詳細
+                      </a>
+                    @else
+                      <a class="detail-link"
+                         href="{{ route('attendance.detail', ['date' => $targetDate]) }}">
+                        詳細
+                      </a>
+                    @endif
                   @endif
                 @endif
               </td>
+              
+              {{-- ▲ ここまで分岐実装 --}}
             </tr>
           @empty
             <tr>
@@ -82,7 +107,6 @@
             </tr>
           @endforelse
         </tbody>
-      </table>
     </div>
 
   </div>

@@ -67,8 +67,7 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
     Route::get('/attendance/list', [AttendanceController::class, 'list'])->name('attendance.list');
 
     // 詳細（?date=YYYY-MM-DD）
-    Route::get('/attendance/detail', [AttendanceController::class, 'detail'])
-        ->name('attendance.detail');
+    Route::get('/attendance/detail', [AttendanceController::class, 'detail'])->name('attendance.detail');
 
     // 修正申請（/attendance/{date}/request）
     Route::post('/attendance/{date}/request', [AttendanceController::class, 'requestCorrection'])
@@ -115,35 +114,41 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'can:admin'])-
 
 /*
 |--------------------------------------------------------------------------
-| 申請一覧（ユーザー/管理者 共通パス）
+| 申請一覧（ユーザー/管理者 共通）
 |--------------------------------------------------------------------------
 */
 Route::get('/stamp_correction_request/list', [StampCorrectionRequestController::class, 'index'])
     ->name('stamp_correction_request.list')
-    ->middleware('auth.any'); // web/adminどちらでもOKの自作ミドルウェア
+    ->middleware('auth.any'); // web/adminどちらでもOK
 
 /*
 |--------------------------------------------------------------------------
-| 修正申請 承認（URLは admin なし／権限だけadmin）
+| 修正申請 承認画面（GETは共通）／承認実行（POSTは管理者のみ）
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:admin', 'can:admin'])->group(function () {
+// 共通：承認画面（左スクショの UI を表示）
+Route::middleware('auth.any')->group(function () {
     Route::get(
         '/stamp_correction_request/approve/{attendance_correct_request_id}',
         [StampCorrectionApprovalController::class, 'show']
-    )->whereNumber('attendance_correct_request_id')
+    )
+        ->whereNumber('attendance_correct_request_id')
         ->name('stamp_correction_request.approve');
+});
 
+// 管理者のみ：承認実行
+Route::middleware(['auth:admin', 'can:admin'])->group(function () {
     Route::post(
         '/stamp_correction_request/approve/{attendance_correct_request_id}',
         [StampCorrectionApprovalController::class, 'approve']
-    )->whereNumber('attendance_correct_request_id')
+    )
+        ->whereNumber('attendance_correct_request_id')
         ->name('stamp_correction_request.approve.store');
 });
 
 /*
 |--------------------------------------------------------------------------
-| 作業用：強制ログアウト（必要なら）
+| 作業用：強制ログアウト
 |--------------------------------------------------------------------------
 */
 Route::get('/dev-logout', function () {

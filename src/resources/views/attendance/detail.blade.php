@@ -7,6 +7,7 @@
 @endsection
 
 @section('content')
+
 @php
   // コントローラから渡ってくる想定:
   // $date   : Carbon (対象日)

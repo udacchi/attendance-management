@@ -251,30 +251,29 @@ class AttendanceController extends Controller
 
     public function detailByUserDate(int $id, Request $request)
     {
-        $tz = config('app.timezone', 'Asia/Tokyo');
+        $tz   = config('app.timezone', 'Asia/Tokyo');
         $user = User::findOrFail($id);
 
         $date = $request->query('date')
             ? Carbon::parse($request->query('date'), $tz)->startOfDay()
             : Carbon::now($tz)->startOfDay();
 
-        // 対象日の勤怠
         $attendanceDay = AttendanceDay::firstOrCreate(
             ['user_id' => $user->id, 'work_date' => $date->toDateString()],
             []
         );
 
-        // ---- 休憩リレーション＆列名の自動判定（breakPeriods / breaks 両対応）----
+        // ---- リレーション／列名の自動判定 ----
         $relName = method_exists($attendanceDay, 'breakPeriods') ? 'breakPeriods'
             : (method_exists($attendanceDay, 'breaks') ? 'breaks' : null);
 
         if ($relName) $attendanceDay->load($relName);
 
-        // テーブル名と列名を推測
         $tbl = 'break_periods';
         if (
-            $attendanceDay->$relName instanceof \Illuminate\Database\Eloquent\Collection &&
-            $attendanceDay->$relName->first()
+            $relName
+            && $attendanceDay->$relName instanceof \Illuminate\Database\Eloquent\Collection
+            && $attendanceDay->$relName->first()
         ) {
             $tbl = $attendanceDay->$relName->first()->getTable();
         } elseif (Schema::hasTable('breaks')) {
@@ -283,16 +282,16 @@ class AttendanceController extends Controller
 
         $colStart = Schema::hasColumn($tbl, 'break_start_at') ? 'break_start_at'
             : (Schema::hasColumn($tbl, 'started_at') ? 'started_at'
-                : (Schema::hasColumn($tbl, 'start_at') ? 'start_at' : null));
+                : (Schema::hasColumn($tbl, 'start_at')   ? 'start_at'   : null));
         $colEnd   = Schema::hasColumn($tbl, 'break_end_at') ? 'break_end_at'
             : (Schema::hasColumn($tbl, 'ended_at') ? 'ended_at'
-                : (Schema::hasColumn($tbl, 'end_at') ? 'end_at' : null));
+                : (Schema::hasColumn($tbl, 'end_at')   ? 'end_at'   : null));
 
-        // --- まず「通常の値」で record を作る ---
+        // --- record を作る ---
         $record = [
             'user_id'   => $user->id,
             'name'      => $user->name,
-            'clock_in'  => $attendanceDay->clock_in_at ? $attendanceDay->clock_in_at->format('H:i') : '',
+            'clock_in'  => $attendanceDay->clock_in_at  ? $attendanceDay->clock_in_at->format('H:i')  : '',
             'clock_out' => $attendanceDay->clock_out_at ? $attendanceDay->clock_out_at->format('H:i') : '',
             'note'      => $attendanceDay->note,
             'breaks'    => [],
@@ -306,10 +305,10 @@ class AttendanceController extends Controller
                 ];
             }
         }
-        // 入力行追加
+        // 常に入力1行を追加
         $record['breaks'][] = ['start' => '', 'end' => ''];
 
-        // ---- pending の最新データで上書き（既存方針）----
+        // ---- pending で上書き ----
         $pending = CorrectionRequest::where('attendance_day_id', $attendanceDay->id)
             ->where('status', 'pending')
             ->latest('id')
@@ -317,14 +316,14 @@ class AttendanceController extends Controller
 
         if ($pending) {
             if (!empty($pending->payload)) {
-                $p = is_array($pending->payload) ? $pending->payload : json_decode($pending->payload, true);
+                $p  = is_array($pending->payload) ? $pending->payload : json_decode($pending->payload, true);
                 $hm = function ($v) use ($tz) {
                     if (is_string($v) && preg_match('/^\d{1,2}:\d{2}$/', $v)) return $v;
                     return $v ? Carbon::parse($v, $tz)->format('H:i') : null;
                 };
-                if (array_key_exists('clock_in', $p))  $record['clock_in']  = $hm($p['clock_in'])  ?? '';
+                if (array_key_exists('clock_in',  $p)) $record['clock_in']  = $hm($p['clock_in'])  ?? '';
                 if (array_key_exists('clock_out', $p)) $record['clock_out'] = $hm($p['clock_out']) ?? '';
-                if (array_key_exists('note', $p))      $record['note']      = (string)($p['note'] ?? '');
+                if (array_key_exists('note',      $p)) $record['note']      = (string)($p['note'] ?? '');
 
                 if (!empty($p['breaks']) && is_array($p['breaks'])) {
                     $record['breaks'] = [];
@@ -343,20 +342,33 @@ class AttendanceController extends Controller
                 $record['clock_out'] = $pending->proposed_clock_out_at
                     ? Carbon::parse($pending->proposed_clock_out_at, $tz)->format('H:i')
                     : $record['clock_out'];
-                $record['note'] = $pending->proposed_note ?? $record['note'];
+                $record['note']      = $pending->proposed_note ?? $record['note'];
             }
         }
 
-        $isPending = (bool) $pending;
+        $isPending  = (bool)$pending;
+
+        // ---- 承認済み検知＆モード ----
+        $approved = CorrectionRequest::where('attendance_day_id', $attendanceDay->id)
+            ->where('status', 'approved')
+            ->latest('id')
+            ->first();
+
+        $mode       = $isPending ? 'pending' : ($approved ? 'approved' : 'normal');
+        $isEditable = false; // 管理者詳細は閲覧用に固定（要件に合わせて変更可）
 
         return view('admin.attendance.detail', [
             'user'          => $user,
             'date'          => $date,
-            'record'        => $record,
+            'record'        => $record,        // ← 定義済みだから安全
             'attendanceDay' => $attendanceDay,
             'isPending'     => $isPending,
+            'mode'          => $mode,
+            'isEditable'    => $isEditable,
         ]);
     }
+
+
 
 
     // 編集フォーム（user+date ベース）
@@ -368,9 +380,8 @@ class AttendanceController extends Controller
             ? Carbon::parse($dateStr, $tz)->startOfDay()
             : Carbon::now($tz)->startOfDay();
 
-        // 承認待ちはサーバ側でブロック
-        if ($this->hasPendingCorrection($user->id, $date)) {
-            return back()->withInput()->with('error', '承認待ちのため修正はできません。');
+        if ($this->hasPendingCorrection($user->id, $date) || $this->hasApprovedCorrection($user->id, $date)) {
+            return back()->withInput()->with('error', '承認済み／承認待ちのため修正はできません。');
         }
 
         $attendanceDay = AttendanceDay::firstOrCreate(
@@ -651,6 +662,26 @@ class AttendanceController extends Controller
         return CorrectionRequest::where($userCol, $userId)
             ->whereDate($dateCol, $date->toDateString())
             ->where('status', 'pending')
+            ->exists();
+    }
+
+    private function hasApprovedCorrection(int $userId, Carbon $date): bool
+    {
+        if (!class_exists(CorrectionRequest::class)) return false;
+        if (!Schema::hasTable('correction_requests')) return false;
+
+        $tbl = 'correction_requests';
+        $userCol = Schema::hasColumn($tbl, 'requested_user_id') ? 'requested_user_id'
+            : (Schema::hasColumn($tbl, 'requested_by') ? 'requested_by'
+                : (Schema::hasColumn($tbl, 'user_id') ? 'user_id' : null));
+        $dateCol = Schema::hasColumn($tbl, 'work_date') ? 'work_date'
+            : (Schema::hasColumn($tbl, 'target_date') ? 'target_date'
+                : (Schema::hasColumn($tbl, 'date') ? 'date' : null));
+        if (!$userCol || !$dateCol || !Schema::hasColumn($tbl, 'status')) return false;
+
+        return CorrectionRequest::where($userCol, $userId)
+            ->whereDate($dateCol, $date->toDateString())
+            ->where('status', 'approved')
             ->exists();
     }
 }

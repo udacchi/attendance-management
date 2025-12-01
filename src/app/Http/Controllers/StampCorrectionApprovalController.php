@@ -16,18 +16,44 @@ class StampCorrectionApprovalController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth:admin', 'can:admin']);
+        // ★ POST の approve だけ管理者必須にする
+        $this->middleware(['auth:admin', 'can:admin'])->only('approve');
+
+        // ★ GET の show は web/admin どちらでもOK
+        $this->middleware('auth.any')->only('show');
     }
 
     /** 承認画面（GET） */
     public function show(int $attendance_correct_request_id)
     {
+        $isAdmin = Auth::guard('admin')->check();
+        $webUser = Auth::guard('web')->user();
+
+        if (!$isAdmin && !$webUser) {
+            abort(401);
+        }
+
         $req = CorrectionRequest::with(['user:id,name', 'attendanceDay'])
             ->findOrFail($attendance_correct_request_id);
 
+        // 一般ユーザーは「自分の申請だけ」閲覧可
+        if (!$isAdmin) {
+            $uidCol = Schema::hasColumn('correction_requests', 'requested_user_id')
+                ? 'requested_user_id'
+                : (Schema::hasColumn('correction_requests', 'requested_by')
+                    ? 'requested_by'
+                    : 'user_id');
+
+            if ($req->{$uidCol} !== $webUser->id) {
+                abort(403);
+            }
+        }
+
+        $req = CorrectionRequest::with(['user:id,name', 'attendanceDay'])->findOrFail($attendance_correct_request_id);
+
         $tz = config('app.timezone', 'Asia/Tokyo');
 
-        // 対象日
+        // 対象日（payload/列差異に頑丈に）
         $date = $req->target_at
             ? Carbon::parse($req->target_at, $tz)
             : ($req->attendanceDay && $req->attendanceDay->work_date
@@ -37,13 +63,14 @@ class StampCorrectionApprovalController extends Controller
         $status    = $req->status ?? null;
         $isPending = ($status === 'pending');
 
-        // 表示用ヘルパ
-        $pick = function (...$c) {
-            foreach ($c as $v) if ($v !== null && $v !== '') return $v;
-            return null;
-        };
-        $hm   = function ($v) use ($tz) {
-            if (empty($v)) return '';
+        // 表示用: HH:MM か日時を H:i に、'--:--' は空に
+        $hm = function ($v) use ($tz) {
+            if ($v === null) return '';
+            if (is_string($v)) {
+                $t = trim($v);
+                if ($t === '' || $t === '--:--') return '';
+                if (preg_match('/^\d{1,2}:\d{2}$/', $t)) return $t;
+            }
             try {
                 return Carbon::parse($v, $tz)->format('H:i');
             } catch (\Throwable $e) {
@@ -51,42 +78,18 @@ class StampCorrectionApprovalController extends Controller
             }
         };
 
+        // 候補から最初の非空を返す
+        $firstNonEmpty = function (...$vals) {
+            foreach ($vals as $v) {
+                if ($v === null) continue;
+                $s = is_string($v) ? trim($v) : $v;
+                if ($s !== '' && $s !== '--:--') return $v;
+            }
+            return null;
+        };
+
         $a = $req->attendanceDay;
 
-        // ---- 休憩の復元ロジック ---- //
-        $breaks = [];
-
-        // 1) 申請 payload に休憩が入っている場合（これを最優先で表示）
-        if (!empty($req->payload['breaks']) && is_array($req->payload['breaks'])) {
-            foreach ($req->payload['breaks'] as $b) {
-                $breaks[] = [
-                    'start' => $hm($b['start'] ?? null),
-                    'end'   => $hm($b['end']   ?? null),
-                ];
-            }
-        }
-
-        // 2) payload に無ければ、AttendanceDay の実績 break を使用
-        elseif ($req->attendanceDay && $req->attendanceDay->breaks) {
-            foreach ($req->attendanceDay->breaks as $bp) {
-                $breaks[] = [
-                    'start' => $hm($bp->started_at),
-                    'end'   => $hm($bp->ended_at),
-                ];
-            }
-        }
-
-        // ③実データの空行を除去（start と end が両方空の行）
-        $breaks = array_values(array_filter($breaks, function ($b) {
-            $s = $b['start'] ?? '';
-            $e = $b['end']   ?? '';
-            return ($s !== '' || $e !== '');
-        }));
-
-        // ④最後に必ず空の休憩行を 1 行追加
-        $breaks[] = ['start' => '', 'end' => ''];
-
-        // ----- 備考の統合（表示用） -----
         // payload を安全に配列化
         $payload = $req->payload;
         if (!is_array($payload)) {
@@ -94,23 +97,66 @@ class StampCorrectionApprovalController extends Controller
             if (!is_array($payload)) $payload = [];
         }
 
-        // 候補を集める（空は除外）
+        /** 休憩の復元 **/
+        $breaks = [];
+        if (!empty($payload['breaks']) && is_array($payload['breaks'])) {
+            // 1) 申請 payload（最優先）
+            foreach ($payload['breaks'] as $b) {
+                $breaks[] = ['start' => $hm($b['start'] ?? null), 'end' => $hm($b['end'] ?? null)];
+            }
+        } else {
+            // 2) 実績（breakPeriods / breaks どちらでも）
+            $rel = null;
+            if ($a) {
+                $rel = method_exists($a, 'breakPeriods') ? 'breakPeriods' : (method_exists($a, 'breaks') ? 'breaks' : null);
+                if ($rel) $a->loadMissing($rel);
+            }
+            if ($rel && $a->$rel) {
+                // 列名の違いを吸収
+                foreach ($a->$rel as $bp) {
+                    $s = $bp->break_start_at ?? $bp->started_at ?? $bp->start_at ?? null;
+                    $e = $bp->break_end_at   ?? $bp->ended_at   ?? $bp->end_at   ?? null;
+                    $breaks[] = ['start' => $hm($s), 'end' => $hm($e)];
+                }
+            }
+        }
+        // 空行（start/end 両方空）は除去
+        $breaks = array_values(array_filter($breaks, fn($b) => ($b['start'] ?? '') !== '' || ($b['end'] ?? '') !== ''));
+        // 承認待ちの時だけ、見やすさ用に末尾へ空1行
+        if ($isPending) $breaks[] = ['start' => '', 'end' => ''];
+
+        /** 出勤・退勤 **/
+        $clockIn = $firstNonEmpty(
+            $payload['clock_in'] ?? null,
+            $req->proposed_clock_in_at ?? null,
+            $req->new_clock_in ?? null,   // 旧コード互換
+            $req->clock_in ?? null,
+            optional($a)->clock_in_at
+        );
+        $clockOut = $firstNonEmpty(
+            $payload['clock_out'] ?? null,
+            $req->proposed_clock_out_at ?? null,
+            $req->new_clock_out ?? null,  // 旧コード互換
+            $req->clock_out ?? null,
+            optional($a)->clock_out_at
+        );
+
+        /** 備考（行単位で重複除去して結合） **/
         $noteParts = array_filter([
+            $payload['note'] ?? null,
             $req->proposed_note ?? null,
             $req->reason ?? null,
-            $payload['note'] ?? null,
-            optional($req->attendanceDay)->note,
-        ], fn($v) => $v !== null && $v !== '');
+            optional($a)->note,
+        ], fn($v) => $v !== null && trim((string)$v) !== '');
 
-        // --- 行単位で重複を除去 ---
-        $split = fn(string $t) => preg_split('/\R/u', $t); // 改行で分割（\r\n,\r,\n 全対応）
+        $split = fn(string $t) => preg_split('/\R/u', $t);
         $seen = [];
         $lines = [];
         foreach ($noteParts as $t) {
-            foreach ($split($t) as $line) {
+            foreach ($split((string)$t) as $line) {
                 $line = trim($line);
                 if ($line === '') continue;
-                $key = mb_strtolower($line);   // 大文字小文字/全半角差を吸収したいならここで正規化を追加
+                $key = mb_strtolower($line);
                 if (!isset($seen[$key])) {
                     $seen[$key] = true;
                     $lines[] = $line;
@@ -119,17 +165,18 @@ class StampCorrectionApprovalController extends Controller
         }
         $noteMerged = implode("\n", $lines);
 
-        // 表示用レコード
+        // Blade へ渡す表示用レコード
         $record = [
             'name'      => optional($req->user)->name,
-            'clock_in'  => $hm($pick($req->new_clock_in,  $req->clock_in,  optional($a)->clock_in_at)),
-            'clock_out' => $hm($pick($req->new_clock_out, $req->clock_out, optional($a)->clock_out_at)),
-            'note'      => $noteMerged,   // ← 重複排除済み
+            'clock_in'  => $hm($clockIn),
+            'clock_out' => $hm($clockOut),
+            'note'      => $noteMerged,
             'breaks'    => $breaks,
         ];
 
         return view('stamp_correction_request.approve', compact('req', 'date', 'record', 'isPending'));
     }
+
 
     /** 承認実行（POST） */
     public function approve(Request $request, int $attendance_correct_request_id)
