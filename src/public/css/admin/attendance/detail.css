@@ -27,6 +27,7 @@ body{ background: var(--canvas); }
   font-weight: 700;
   color: var(--text1);
 }
+
 .page-title::before{
   content: "";
   position: absolute;
@@ -117,7 +118,7 @@ body{ background: var(--canvas); }
 /* 操作ボタン */
 .detail-actions{
   width: min(900px,100%);
-  margin: 18px auto 0;
+  margin: 60px auto 0;
   display: flex;
   justify-content: flex-end;
 }
@@ -127,7 +128,6 @@ body{ background: var(--canvas); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 44px;
   padding: 0 28px;
   border-radius: 5px;
   background: #000000;

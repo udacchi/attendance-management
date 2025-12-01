@@ -117,7 +117,7 @@ body { background: var(--canvas); }
 /* 操作ボタン */
 .detail-actions{
   width: min(900px,100%);
-  margin: 18px auto 0;
+  margin: 60px auto 0;
   display: flex;
   justify-content: flex-end;
 }

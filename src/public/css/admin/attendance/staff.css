@@ -1,14 +1,9 @@
 :root{
-  --canvas:#efeff3;
-  --panel:#fff;
-  --text:#1a1a1a;
-  --muted:#666;
-  --border:#e6e6eb;
-  --border-strong:#dcdce2;
-  --chip:#f4f4f7;
-  --radius:10px;
-  --black:#000;
-  --white:#fff;
+  --canvas: #efefef;
+  --panel: #ffffff;
+  --text1: #000000;
+  --text2: #737373;
+  --border: #E1E1E1;
 }
 
 body{ background:var(--canvas); }
@@ -17,7 +12,7 @@ body{ background:var(--canvas); }
 .admin-staff-attendance{ padding:32px 16px 64px; }
 .admin-staff-attendance__inner{
   background:var(--canvas);
-  width:min(1040px, 100%);
+  width:min(1120px, 100%);
   margin:0 auto;
   padding:36px 32px 56px;
   box-shadow:var(--shadow);
@@ -25,19 +20,19 @@ body{ background:var(--canvas); }
 
 /* タイトル（左の縦線アクセント） */
 .page-title{
-  position:relative;
-  margin:8px 0 20px;
-  font-size:22px;
-  font-weight:700;
-  color:var(--text);
+  position: relative;
+  margin: 8px 0 20px;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text1);
 }
 .page-title::before{
-  content:"";
-  position:absolute;
-  left:-16px; top:2px;
-  width:4px; height:24px;
-  background:#111;
-  border-radius:2px;
+  content: "";
+  position: absolute;
+  left: -28px; top: 4px;
+  width: 8px; height: 40px;
+  background: #000000;
+  border-radius: 2px;
 }
 
 /* ===== 月ナビ（ピル型・中央強調） ===== */
@@ -96,7 +91,7 @@ body{ background:var(--canvas); }
   letter-spacing: .3px;
   color: var(--text1);
   cursor: pointer;
-  user-select: none;
+  user-select: none; 
 }
 
 .month-nav__input{
@@ -106,76 +101,88 @@ body{ background:var(--canvas); }
   pointer-events: none;
   border: none;
   background: transparent;
-  outline: none;
+  outline: none;  
 }
 
 /* テーブル */
-.attendance-table__wrap{
-  width:100%;
-  margin:8px auto 0;
+.att-table__wrap{
+  width: min(900px, 100%);
+  margin: 16px auto 0;
 }
-.attendance-table{
+.att-table{
   width:100%;
   border-collapse:separate;
   border-spacing:0;
   background:var(--panel);
   border-radius:10px;
   overflow:hidden;
-  box-shadow:0 1px 0 rgba(0,0,0,.02);
   font-variant-numeric: tabular-nums;
 }
-.attendance-table thead th{
-  background:#fff;
-  color:#333;
-  text-align:left;
-  font-weight:700;
-  font-size:14px;
-  padding:14px 18px;
-  border-bottom:2px solid var(--border-strong);
+.att-table thead th{
+  background: var(--panel);
+  color: var(--text2);
+  text-align: left;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 18px;
+  border-bottom: 3px solid var(--border);
 }
-.attendance-table tbody td{
-  padding:14px 18px;
-  border-bottom:1px solid var(--border);
-  font-size:14px;
-  color:#222;
+.att-table tbody td{
+  padding: 14px 18px;
+  border-bottom: 2px solid var(--border);
+  font-size: 16px;
+  color: var(--text2);
 }
-.attendance-table tbody tr:last-child td{ border-bottom:none; }
+.att-table tbody tr:last-child td{ border-bottom:none; }
 
 .cell--date{ width:28%; letter-spacing:.02em; color:#222; }
 .cell--time{ width:12%; letter-spacing:.04em; }
 .cell--link{ width:10%; }
 
 .detail-link{
-  color:#111;
-  font-weight:700;
-  text-decoration:none;
+  color: var(--text1);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
 }
 .detail-link:hover{ text-decoration:underline; }
 
-.cell--empty{
-  text-align:center;
-  color:var(--muted);
-  padding:28px 12px;
+.att-table{
+  width: 100%;
+  table-layout: fixed;      /* ← 列幅をcolgroupで固定 */
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--panel);
+  border-radius: 10px;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
 }
+
+/* 列幅（必要に応じて数値は微調整してください） */
+.col-name { width: 220px; }   /* ← ここを少し狭めるのが “左に寄せる” 効果のキモ */
+.col-time { width: 110px; }
+.col-link { width: 80px;  }
 
 /* フッター操作（右下の黒ボタン） */
 .page-actions{
-  width:min(760px, 100%);
-  margin:18px auto 0;
-  display:flex;
-  justify-content:flex-end;
+  width: min(900px,100%);
+  margin: 60px auto 0;
+  display: flex;
+  justify-content: flex-end;
 }
 .btn-primary{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  height:40px;
-  padding:0 18px;
-  border-radius:8px;
-  background:var(--black);
-  color:var(--white);
-  font-weight:700;
-  text-decoration:none;
-  transition:opacity .15s ease;
+  width: 185px;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 28px;
+  border-radius: 5px;
+  background: #000000;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 22px;
+  text-decoration: none;
+  transition: opacity .15s ease;
 }
 .btn-primary:hover{ opacity:.9; }
