@@ -203,20 +203,25 @@ body{ background: var(--canvas); }
    エラーメッセージ (赤色)
    =========================== */
 
-   .error,
-   .cell--error {
-     color: #ff0000;                /* 赤文字 */
-     background: #fdecea;           /* 薄い赤背景 */
-     border: 1px solid #f2b8b5;     /* 赤の境界線 */
-     border-radius: 5px;
-     padding: 10px 14px;
-     font-size: 14px;
-     font-weight: 400;
-   }
-   
-   /* テーブル内の行として出る場合の調整 */
-   .detail-table .error,
-   .detail-table .cell--error {
-     text-align: left;
-     padding: 16px 36px;
-   }
+.error,
+.cell--error {
+  color: #ff0000;                /* 赤文字 */
+  background: #fdecea;           /* 薄い赤背景 */
+  border: 1px solid #f2b8b5;     /* 赤の境界線 */
+  border-radius: 5px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* テーブル内の行として出る場合の調整 */
+.detail-table .error,
+.detail-table .cell--error {
+  text-align: left;
+  padding: 16px 36px;
+}
+
+/* 値が空の time を視覚的に“空欄”にする（Chrome/Edge用） */
+.time-input.is-empty::-webkit-datetime-edit { color: transparent; }
+/* フォーカス時は見えるように */
+.time-input.is-empty:focus::-webkit-datetime-edit { color: inherit; }
