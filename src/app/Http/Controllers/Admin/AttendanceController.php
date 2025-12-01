@@ -348,14 +348,16 @@ class AttendanceController extends Controller
 
         $isPending  = (bool)$pending;
 
-        // ---- 承認済み検知＆モード ----
+        // ... 承認状況の取得後
         $approved = CorrectionRequest::where('attendance_day_id', $attendanceDay->id)
             ->where('status', 'approved')
             ->latest('id')
             ->first();
 
+        // ★ここを書き換え
         $mode       = $isPending ? 'pending' : ($approved ? 'approved' : 'normal');
-        $isEditable = false; // 管理者詳細は閲覧用に固定（要件に合わせて変更可）
+        // 以前: $isEditable = false;
+        $isEditable = ($mode === 'normal');  // ← normal のときだけ編集可
 
         return view('admin.attendance.detail', [
             'user'          => $user,
