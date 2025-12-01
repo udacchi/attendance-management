@@ -32,7 +32,7 @@
         <span class="month-nav__arrow">&#8592;</span> 前月
       </a>
 
-      <form id="monthNavForm" class="month-nav__center" action="{{ route('attendance.list') }}" method="get">
+      <form id="monthNavForm" class="month-nav__center" action="{{ route('admin.attendance.staff', ['id' => $user->id]) }}" method="get">
         {{-- ▼ カレンダーアイコン --}}
         <svg class="month-nav__icon" viewBox="0 0 24 24" aria-hidden="true">
           <!-- 外枠 -->
@@ -80,8 +80,16 @@
     </div>
 
     <!-- テーブル -->
-    <div class="attendance-table__wrap">
-      <table class="attendance-table">
+    <div class="att-table__wrap">
+      <table class="att-table">
+        <colgroup>
+          <col class="col-name">
+          <col class="col-time">
+          <col class="col-time">
+          <col class="col-time">
+          <col class="col-time">
+          <col class="col-link">
+        </colgroup>
         <thead>
           <tr>
             <th>日付</th>
@@ -93,7 +101,7 @@
           </tr>
         </thead>
         <tbody>
-          @forelse ($days as $d)
+          @foreach ($days as $d)
             @php $dCarbon = \Carbon\Carbon::parse($d['date']); @endphp
             <tr>
               <td class="cell--date">{{ $dCarbon->isoFormat('MM/DD(ddd)') }}</td>
@@ -108,11 +116,7 @@
                 </a>
               </td>
             </tr>
-          @empty
-            <tr>
-              <td colspan="6" class="cell--empty">この月のデータはありません</td>
-            </tr>
-          @endforelse
+          @endforeach
         </tbody>
       </table>
     </div>
