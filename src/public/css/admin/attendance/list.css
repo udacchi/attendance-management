@@ -144,3 +144,18 @@ body { background:var(--canvas); }
 }
 .detail-link:hover{ text-decoration: underline; }
 
+.att-table{
+  width: 100%;
+  table-layout: fixed;      /* ← 列幅をcolgroupで固定 */
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--panel);
+  border-radius: 10px;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 列幅（必要に応じて数値は微調整してください） */
+.col-name { width: 220px; }   /* ← ここを少し狭めるのが “左に寄せる” 効果のキモ */
+.col-time { width: 110px; }
+.col-link { width: 80px;  }

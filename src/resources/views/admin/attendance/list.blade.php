@@ -100,6 +100,14 @@
     {{-- テーブル --}}
     <div class="att-table__wrap">
       <table class="att-table">
+        <colgroup>
+          <col class="col-name">
+          <col class="col-time">
+          <col class="col-time">
+          <col class="col-time">
+          <col class="col-time">
+          <col class="col-link">
+        </colgroup>
         <thead>
           <tr>
             <th>名前</th>
