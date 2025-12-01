@@ -8,13 +8,6 @@
 
 @section('content')
 <div class="verify-email__container">
-  {{-- 成功フラッシュ（Fortify標準） --}}
-  @if (session('status') === 'verification-link-sent')
-    <div class="verify-email__hint" style="margin-bottom:12px;color:#0a7;">
-      認証メールを再送しました。受信箱をご確認ください。
-    </div>
-  @endif
-
   <p class="verify-email__message">
     登録していただいたメールアドレスに認証メールを送付しました。<br>
     メール認証を完了してください。
