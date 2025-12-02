@@ -13,6 +13,7 @@
   $isEditable = $isEditable ?? false;  // Controller 側で制御
   // 承認待ち or 承認済み、または編集不可指定のときは読み取り専用
   $isReadOnly = ($mode !== 'normal') || (!$isEditable);
+  $isApproved = ($mode === 'approved'); // ← 追加：承認後フラグ
 
   // "--:--" / null / '' を空文字へ正規化
   $hm = function($v){
@@ -42,11 +43,11 @@
   $isEmpty = fn($b) => ($b['start'] === '' && $b['end'] === '');
 
   // 表示行の最終整形：
-  // - pending のときは空行を除去（見やすさ）
-  // - normal/approved のときは末尾に空行が無ければ 1 行追加（編集しやすさ）
-  if ($mode === 'pending') {
+  // - pending/approved のときは空行を除去（approved は“確定表示”）
+  // - normal のときだけ末尾に空行を1行追加（編集しやすさ）
+  if ($mode === 'pending' || $mode === 'approved') {
       $breaks = array_values(array_filter($breaks, fn($b) => ! $isEmpty($b)));
-  } else {
+  } else { // normal
       if (empty($breaks) || ! $isEmpty($breaks[count($breaks)-1])) {
           $breaks[] = ['start' => '', 'end' => ''];
       }
@@ -79,54 +80,80 @@
               <td class="cell--center cell--md" colspan="2">{{ $date->isoFormat('M月D日') }}</td>
             </tr>
 
-            {{-- 出勤・退勤（未入力は空欄表示） --}}
+            {{-- 出勤・退勤（未入力は視覚的に空欄） --}}
             <tr>
               <th>出勤・退勤</th>
-              <td class="cell--inputs">
-                <input
-                  class="chip-input time-input {{ $clockInVal === '' ? 'is-empty' : '' }}"
-                  type="time" name="clock_in"
-                  value="{{ $clockInVal }}" {{ $isReadOnly ? 'readonly' : '' }}>
-              </td>
-              <td class="cell--tilde">〜</td>
-              <td class="cell--inputs">
-                <input
-                  class="chip-input time-input {{ $clockOutVal === '' ? 'is-empty' : '' }}"
-                  type="time" name="clock_out"
-                  value="{{ $clockOutVal }}" {{ $isReadOnly ? 'readonly' : '' }}>
-              </td>
-            </tr>
-            @error('clock_pair')  <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
-
-            {{-- 休憩（正規化済み $breaks をそのまま使う） --}}
-            @foreach ($breaks as $idx => $b)
-              <tr>
-                <th>休憩{{ $idx + 1 }}</th>
+              @if($isApproved)
+                <td class="cell--astext">{{ $clockInVal !== '' ? $clockInVal : '' }}</td>
+                <td class="cell--tilde">〜</td>
+                <td class="cell--astext">{{ $clockOutVal !== '' ? $clockOutVal : '' }}</td>
+              @else
                 <td class="cell--inputs">
                   <input
-                    class="chip-input time-input {{ ($b['start'] ?? '') === '' ? 'is-empty' : '' }}"
-                    type="time" name="breaks[{{ $idx }}][start]"
-                    value="{{ $b['start'] }}" {{ $isReadOnly ? 'readonly' : '' }}>
+                    class="chip-input time-input {{ $clockInVal === '' ? 'is-empty' : '' }}"
+                    type="time" name="clock_in"
+                    value="{{ $clockInVal }}" {{ $isReadOnly ? 'readonly' : '' }}>
                 </td>
                 <td class="cell--tilde">〜</td>
                 <td class="cell--inputs">
                   <input
-                    class="chip-input time-input {{ ($b['end'] ?? '') === '' ? 'is-empty' : '' }}"
-                    type="time" name="breaks[{{ $idx }}][end]"
-                    value="{{ $b['end'] }}" {{ $isReadOnly ? 'readonly' : '' }}>
+                    class="chip-input time-input {{ $clockOutVal === '' ? 'is-empty' : '' }}"
+                    type="time" name="clock_out"
+                    value="{{ $clockOutVal }}" {{ $isReadOnly ? 'readonly' : '' }}>
                 </td>
-              </tr>
-            @endforeach
+              @endif
+            </tr>
+            @error('clock_pair')  <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
+
+            {{-- 休憩（ここでは $breaks を再定義しない！） --}}
+            @if($isApproved)
+              {{-- 承認後：未入力の休憩行は非表示、値はテキストで表示 --}}
+              @foreach ($breaks as $idx => $b)
+                <tr>
+                  <th>休憩{{ $idx + 1 }}</th>
+                  <td class="cell--astext">{{ ($b['start'] ?? '') !== '' ? $b['start'] : '' }}</td>
+                  <td class="cell--tilde">〜</td>
+                  <td class="cell--astext">{{ ($b['end']   ?? '') !== '' ? $b['end']   : '' }}</td>
+                </tr>
+              @endforeach
+            @else
+              {{-- 承認前（normal/pending）：従来どおり。pending は readonly --}}
+              @foreach ($breaks as $idx => $b)
+                <tr>
+                  <th>休憩{{ $idx + 1 }}</th>
+                  <td class="cell--inputs">
+                    <input
+                      class="chip-input time-input {{ ($b['start'] ?? '') === '' ? 'is-empty' : '' }}"
+                      type="time" name="breaks[{{ $idx }}][start]"
+                      value="{{ $b['start'] }}" {{ $isReadOnly ? 'readonly' : '' }}>
+                  </td>
+                  <td class="cell--tilde">〜</td>
+                  <td class="cell--inputs">
+                    <input
+                      class="chip-input time-input {{ ($b['end'] ?? '') === '' ? 'is-empty' : '' }}"
+                      type="time" name="breaks[{{ $idx }}][end]"
+                      value="{{ $b['end'] }}" {{ $isReadOnly ? 'readonly' : '' }}>
+                  </td>
+                </tr>
+              @endforeach
+            @endif           
             @error('breaks_range') <tr><td colspan="4" class="cell--error">{{ $message }}</td></tr> @enderror
 
+
             {{-- 備考 --}}
+            @php $noteVal = old('note', $record['note'] ?? ''); @endphp
             <tr>
               <th>備考</th>
-              <td colspan="3" class="cell--inputs">
-                <textarea class="note-box" name="note" rows="2" {{ $isReadOnly ? 'readonly' : '' }}>{{ old('note', $record['note'] ?? '') }}</textarea>
-              </td>
+              @if($isApproved)
+                <td colspan="3" class="cell--astext">{{ $noteVal !== '' ? $noteVal : '' }}</td>
+              @else
+                <td colspan="3" class="cell--inputs">
+                  <textarea class="note-box" name="note" rows="2" {{ $isReadOnly ? 'readonly' : '' }}>{{ $noteVal }}</textarea>
+                </td>
+              @endif
             </tr>
             @error('note') <tr><td colspan="4" class="error">{{ $message }}</td></tr> @enderror
+
           </tbody>
         </table>
       </div>
