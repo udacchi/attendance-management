@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Log;
 
 use App\Models\AttendanceDay;
 use App\Models\User;
@@ -355,9 +354,9 @@ class AttendanceController extends Controller
             ->first();
 
         // ★ここを書き換え
-        $mode       = $isPending ? 'pending' : ($approved ? 'approved' : 'normal');
+        $mode = $isPending ? 'pending' : ($approved ? 'approved' : 'normal');
         // 以前: $isEditable = false;
-        $isEditable = ($mode === 'normal');  // ← normal のときだけ編集可
+        $isEditable = $request->boolean('edit') && ($mode === 'normal');
 
         return view('admin.attendance.detail', [
             'user'          => $user,
