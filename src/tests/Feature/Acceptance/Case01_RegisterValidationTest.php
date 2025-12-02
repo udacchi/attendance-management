@@ -24,7 +24,7 @@ final class Case01_RegisterValidationTest extends FeatureTestCase
         $this->assertStringContainsString($this->MSG_NAME_REQUIRED, session('errors')->first('name'));
     }
 
-    /** ②メール未入力 */
+    /** ②メールアドレス未入力 */
     public function test_email_required(): void
     {
         $res = $this->post($this->ROUTE_REGISTER, [
