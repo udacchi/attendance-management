@@ -1,10 +1,8 @@
 /* ===== Header (admin / user 共通) ===== */
 :root{
   --container: 1200px;
-  --header-bg: #000;
-  --header-topbar: #1a1a1a;   /* 上の細い帯 */
-  --header-divider: #eaeaea;   /* 下の細いライン */
-  --header-text: #fff;
+  --header-bg: #000000;
+  --header-text: #ffffff;
 }
 
 /* 黒帯 */
@@ -12,8 +10,6 @@
 .admin-header{
   background: var(--header-bg);
   color: var(--header-text);
-  border-top: 6px solid var(--header-topbar);
-  border-bottom: 2px solid var(--header-divider);
 }
 
 /* 内側レイアウト */
@@ -59,7 +55,7 @@
   color: var(--header-text);
   text-decoration: none;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 24px;
   line-height: 1;
   padding: 8px 4px;             /* クリックしやすいパディング */
 }
@@ -82,7 +78,7 @@
   background: transparent;
   border: 0;
   color: var(--header-text);
-  font: inherit;
+  font: inter;
   line-height: 1;
   padding: 8px 4px;
   cursor: pointer;
