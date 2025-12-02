@@ -1,12 +1,11 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Tests\Feature\Acceptance\_helpers;
 
 /**
- * 実装に合わせた URL / 文言 を一元管理。
- * もし画面のラベルやルートが違っていたら “ここだけ” 書き換えてください。
+ * 実装に合わせた URL / 画面ラベルを一元管理するトレイト。
+ * ルートやBlade文言に差異があれば、ここだけ直せばテスト全体に反映されます。
  */
 trait Routes
 {
@@ -22,36 +21,25 @@ trait Routes
     protected string $ROUTE_CLOCK_OUT            = '/attendance/clock-out';
 
     // ユーザー勤怠一覧/詳細
-    // 一覧: GET /attendance/list?from=YYYY-MM-DD&to=YYYY-MM-DD もしくは ?month=YYYY-MM
     protected string $ROUTE_USER_ATT_LIST        = '/attendance/list';
-    // 詳細: GET /attendance/detail?date=YYYY-MM-DD
-    // 保存: POST /attendance/detail
     protected string $ROUTE_USER_ATT_DETAIL      = '/attendance/detail';
 
-    // ユーザーの修正申請一覧（承認待ち/承認済みタブ）
+    // ユーザー修正申請一覧
     protected string $ROUTE_USER_REQ_LIST        = '/stamp_correction_request/list';
 
     // ====== 管理者 側 ======
     protected string $ROUTE_ADMIN_LOGIN          = '/admin/login';
-    // 日別勤怠一覧: GET /admin/attendance/list?date=YYYY-MM-DD
     protected string $ROUTE_ADMIN_ATT_LIST       = '/admin/attendance/list';
-    // 勤怠詳細: GET /admin/attendance/detail?id={userId}&date=YYYY-MM-DD
-    // 保存: POST /admin/attendance/detail
     protected string $ROUTE_ADMIN_ATT_DETAIL     = '/admin/attendance/detail';
 
-    // スタッフ一覧/ユーザーの月次勤怠
     protected string $ROUTE_ADMIN_STAFF_LIST     = '/admin/staff/list';
-    protected string $ROUTE_ADMIN_STAFF_ATT_LIST = '/admin/staff/attendance'; // 例: ?id={userId}&month=YYYY-MM
+    protected string $ROUTE_ADMIN_STAFF_ATT_LIST = '/admin/staff/attendance';
 
-    // 修正申請（管理者）
-    // 一覧: GET /admin/stamp_correction_request/list?status=pending|approved
-    // 詳細: GET /admin/stamp_correction_request/detail?id={requestId}
-    // 承認: POST /admin/stamp_correction_request/approve
     protected string $ROUTE_ADMIN_REQ_LIST       = '/admin/stamp_correction_request/list';
     protected string $ROUTE_ADMIN_REQ_DETAIL     = '/admin/stamp_correction_request/detail';
     protected string $ROUTE_ADMIN_REQ_APPROVE    = '/admin/stamp_correction_request/approve';
 
-    // ====== 画面の日本語ラベル（Bladeの表示と一致させる） ======
+    // ====== 画面ラベル ======
     protected string $LBL_STAMP_TITLE            = '勤怠打刻';
     protected string $LBL_ATT_LIST_TITLE         = '勤怠一覧';
     protected string $LBL_ATT_DETAIL_TITLE       = '勤怠詳細';
@@ -70,7 +58,7 @@ trait Routes
     protected string $LBL_TAB_PENDING            = '承認待ち';
     protected string $LBL_TAB_APPROVED           = '承認済み';
 
-    // バリデーション文言（lang/ja/messages.php 等に合わせてください）
+    // ====== バリデーション/エラーメッセージ ======
     protected string $MSG_NAME_REQUIRED          = 'お名前を入力してください';
     protected string $MSG_EMAIL_REQUIRED         = 'メールアドレスを入力してください';
     protected string $MSG_PASSWORD_MIN           = 'パスワードは8文字以上で入力してください';
