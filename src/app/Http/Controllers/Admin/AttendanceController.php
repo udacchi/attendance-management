@@ -353,10 +353,8 @@ class AttendanceController extends Controller
             ->latest('id')
             ->first();
 
-        // ★ここを書き換え
         $mode = $isPending ? 'pending' : ($approved ? 'approved' : 'normal');
-        // 以前: $isEditable = false;
-        $isEditable = $request->boolean('edit') && ($mode === 'normal');
+        $isEditable = ($mode === 'normal');
 
         return view('admin.attendance.detail', [
             'user'          => $user,
