@@ -203,12 +203,29 @@ class AttendanceController extends Controller
             }
 
             // 勤務合計は「pending 反映後」の in/out と breakMin で再計算
+            // ▼ in/out を分に
             $inMin  = $toMin($clockInHM);
             $outMin = $toMin($clockOutHM);
-            $workMin = null;
+
+            // 跨日ケア込みの“勤務スパン”を先に出す
+            $spanMin = null;
             if ($inMin !== null && $outMin !== null) {
-                if ($outMin < $inMin) $outMin += 24 * 60; // 跨日
-                $workMin = max(0, ($outMin - $inMin) - (int)($breakMin ?? 0));
+                $spanMin = $outMin - $inMin;
+                if ($spanMin < 0) $spanMin += 24 * 60; // 退勤が翌日のとき
+            }
+
+            // ...（ここまで今まで通りでOK）...
+
+            // ここまでで $breakMin が決まっているはず
+            // ★ 追加：休憩合計は勤務スパンを超えないようにする
+            if ($spanMin !== null) {
+                $breakMin = min((int)($breakMin ?? 0), $spanMin);
+            }
+
+            // ▼ 勤務合計（休憩控除後）
+            $workMin = null;
+            if ($spanMin !== null) {
+                $workMin = max(0, $spanMin - (int)($breakMin ?? 0));
             }
 
             // 表示用 record

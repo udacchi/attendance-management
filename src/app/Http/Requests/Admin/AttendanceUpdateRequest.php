@@ -81,16 +81,41 @@ class AttendanceUpdateRequest extends FormRequest
             $in  = $toDT($this->input('clock_in'));
             $out = $toDT($this->input('clock_out'));
 
-            // 出勤 > 退勤 は clock_pair に集約
-            if ($in && $out && $in->gt($out)) {
-                $v->errors()->add('clock_pair', '出勤時間もしくは退勤時間が不適切な値です');
+            // --- 勤務スパンを決定（跨日対応）---
+            $spanIn  = $in;
+            $spanOut = $out;
+
+            if ($spanIn && $spanOut) {
+                // 退勤が出勤より前なら翌日扱い（跨日）
+                if ($spanOut->lt($spanIn)) {
+                    $spanOut = $spanOut->copy()->addDay();
+                }
+                // 同一時刻は不可
+                if ($spanOut->equalTo($spanIn)) {
+                    $v->errors()->add('clock_pair', '出勤時間もしくは退勤時間が不適切な値です');
+                }
             }
 
-            // 休憩はまとめて breaks_range のみ
+            // --- 休憩検証（まとめて breaks_range に集約）---
             $rangeInvalid = false;
             $overOut      = false;
+            $breaks       = (array)$this->input('breaks', []);
 
-            foreach ((array)$this->input('breaks', []) as $row) {
+            // 出勤・退勤がそろっていないのに休憩があるのは不可
+            $hasAnyBreakInput = collect($breaks)->contains(function ($row) {
+                $s = isset($row['start']) ? trim((string)$row['start']) : '';
+                $e = isset($row['end'])   ? trim((string)$row['end'])   : '';
+                return $s !== '' || $e !== '';
+            });
+            if ($hasAnyBreakInput && (!$spanIn || !$spanOut)) {
+                $v->errors()->add('breaks_range', '出勤と退勤が無い状態で休憩は登録できません。');
+                return;
+            }
+
+            $totalBreakSec = 0;
+            $spanSec = ($spanIn && $spanOut) ? $spanOut->diffInSeconds($spanIn) : null;
+
+            foreach ($breaks as $i => $row) {
                 $sRaw = isset($row['start']) ? trim((string)$row['start']) : '';
                 $eRaw = isset($row['end'])   ? trim((string)$row['end'])   : '';
 
@@ -106,25 +131,35 @@ class AttendanceUpdateRequest extends FormRequest
                     continue;
                 }
 
-                // 並び/範囲
-                if ($e->lte($s))           $rangeInvalid = true;
-                if ($in  && $s->lt($in))   $rangeInvalid = true;
-                if ($out && $s->gt($out))  $rangeInvalid = true;
-                if ($out && $e->gt($out)) {
-                    $rangeInvalid = true;
-                    $overOut = true;
+                // 休憩自体が跨いだ場合は翌日扱い（基本は非推奨だが安全のため）
+                if ($e->lt($s)) $e = $e->copy()->addDay();
+
+                // 勤務スパン外は不可（退勤以降の休憩もここで弾ける）
+                if ($spanIn && $spanOut) {
+                    if ($s->lt($spanIn) || $e->gt($spanOut) || !$e->gt($s)) {
+                        $rangeInvalid = true;
+                        if ($e->gt($spanOut)) $overOut = true; // メッセージ分岐用
+                        continue;
+                    }
+                    $totalBreakSec += max(0, $e->diffInSeconds($s));
                 }
+            }
+
+            // 休憩合計が勤務スパンを超えないこと（勤務外休憩の混入を検知）
+            if ($spanSec !== null && $totalBreakSec > $spanSec) {
+                $rangeInvalid = true;
+                $overOut = true;
             }
 
             if ($rangeInvalid) {
                 $msg = $overOut
                     ? '休憩時間もしくは退勤時間が不適切な値です'
                     : '休憩時間が不適切な値です';
-                // “消す”必要はないので、そのまま1行だけ追加
                 $v->errors()->add('breaks_range', $msg);
             }
         });
     }
+
 
     // 失敗時の戻り先
     protected function getRedirectUrl(): string
