@@ -16,23 +16,37 @@ class UserFactory extends Factory
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => bcrypt('password'), // 開発用
+            // PHPUnit 側で BCRYPT_ROUNDS=4 が効くのでそのまま bcrypt でOK
+            'password' => bcrypt('password123'),
             'role' => 'user',
             'remember_token' => Str::random(10),
         ];
     }
 
+    /** 管理者ロール */
     public function admin(): self
     {
-        return $this->state(fn() => ['role' => 'admin', 'email' => $this->faker->unique()->safeEmail()]);
+        return $this->state(fn() => [
+            'role'  => 'admin',
+            'email' => $this->faker->unique()->safeEmail(),
+        ]);
     }
 
-    public function unverified()
+    /** メール未認証 */
+    public function unverified(): self
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'email_verified_at' => null,
-            ];
-        });
+        return $this->state(fn() => ['email_verified_at' => null]);
+    }
+
+    /** 任意メールアドレスを固定（テストで使いやすい） */
+    public function withEmail(string $email): self
+    {
+        return $this->state(fn() => ['email' => $email]);
+    }
+
+    /** 表示名を固定 */
+    public function withName(string $name): self
+    {
+        return $this->state(fn() => ['name' => $name]);
     }
 }
