@@ -199,7 +199,7 @@ class Case11_UserCorrectionRequestTest extends FeatureTestCase
             ->assertSee('申請B');
     }
 
-    /** ⑧各申請の「詳細」を押下すると勤怠詳細画面に遷移する */
+    /** ⑧ */
     public function test_detail_link_navigates_to_attendance_detail(): void
     {
         $u = $this->makeUser();
