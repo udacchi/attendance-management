@@ -135,7 +135,7 @@ MAIL_FROM_NAME="勤怠管理アプリ"
 
 ## 🧩 ER 図
 
-（ER 図画像を `/docs/ER.png` などに置いてここに表示）
+![ER 図](docs/er.png)
 
 ---
 
@@ -200,6 +200,3 @@ php artisan db:seed --env=testing
 ・Laravel : 8.83.29
 ・MySQL : 8.0.26
 ・nginx : 1.21.1
-
-##　ER図
-![ER 図](docs/er.svg)
