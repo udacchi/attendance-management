@@ -15,7 +15,7 @@ class Case06_ClockInFeatureTest extends TestCase
     private string $ROUTE_STAMP = '/attendance/stamp';
     private string $ROUTE_PUNCH = '/attendance/punch'; // ← 実装に合わせる
 
-    /** ①出勤ボタン */
+    /** ①出勤ボタンが正しく機能する */
     public function test_clock_in_button_and_status()
     {
         /** @var \App\Models\User $u */
@@ -34,7 +34,7 @@ class Case06_ClockInFeatureTest extends TestCase
             ->assertDontSee('value="clock-in"', false);
     }
 
-    /** ②出勤は1日一回のみ */
+    /** ②出勤は一日一回のみできる */
     public function test_clock_in_only_once_a_day()
     {
         $u   = User::factory()->create();
@@ -58,7 +58,7 @@ class Case06_ClockInFeatureTest extends TestCase
             ->assertDontSee('value="clock-in"', false);
     }
 
-    /** ③出勤時間が勤怠一覧に表示 */
+    /** ③出勤時刻が勤怠一覧画面で確認できる */
     public function test_clock_in_time_appears_on_list()
     {
         $u   = User::factory()->create();

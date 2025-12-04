@@ -12,7 +12,7 @@ final class Case04_NowDisplayTest extends FeatureTestCase
 {
     use Routes;
 
-    /** 日時取得機能 */
+    /** ①現在の日時情報がUIと同じ形式で出力されている */
     public function test_now_text_is_displayed_in_stamp_page(): void
     {
         /** @var \App\Models\User $u */

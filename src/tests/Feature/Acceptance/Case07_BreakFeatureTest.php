@@ -15,6 +15,7 @@ class Case07_BreakFeatureTest extends FeatureTestCase
         return $this->post($this->ROUTE_PUNCH, ['action' => $action]);
     }
 
+    /** ①休憩ボタンが正しく機能する */
     public function test_break_in_button_and_status_changes_to_breaking()
     {
         $u = $this->makeUser();
@@ -30,6 +31,7 @@ class Case07_BreakFeatureTest extends FeatureTestCase
         $this->get($this->ROUTE_STAMP)->assertStatus(200)->assertSee('休憩中');
     }
 
+    /** ②休憩は一日に何回でもできる */
     public function test_break_can_happen_many_times_in_a_day()
     {
         $u = $this->makeUser();
@@ -49,6 +51,7 @@ class Case07_BreakFeatureTest extends FeatureTestCase
         $this->get($this->ROUTE_STAMP)->assertStatus(200)->assertSee('休憩中');
     }
 
+    /** ③休憩戻ボタンが正しく機能する */
     public function test_break_back_button_and_status_returns_to_working()
     {
         $u = $this->makeUser();
@@ -65,6 +68,7 @@ class Case07_BreakFeatureTest extends FeatureTestCase
         $this->get($this->ROUTE_STAMP)->assertStatus(200)->assertSee('出勤中');
     }
 
+    /** ④休憩戻は一日に何回でもできる */
     public function test_break_back_can_happen_many_times_in_a_day()
     {
         $u = $this->makeUser();
@@ -88,6 +92,7 @@ class Case07_BreakFeatureTest extends FeatureTestCase
             ->assertSee('休憩'); // ボタンラベルに依存しないゆるい確認
     }
 
+    /** ⑤休憩時刻が勤怠一覧画面で確認できる */
     public function test_break_times_appear_on_attendance_list()
     {
         $u = $this->makeUser();

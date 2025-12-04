@@ -11,7 +11,7 @@ final class Case03_AdminLoginValidationTest extends FeatureTestCase
 {
     use Routes;
 
-    /** ①メールアドレス未入力 */
+    /** ①メールアドレスが未入力の場合、バリデーションメッセージが表示される */
     public function test_email_required(): void
     {
         User::factory()->admin()->create([
@@ -28,7 +28,7 @@ final class Case03_AdminLoginValidationTest extends FeatureTestCase
         $this->assertStringContainsString($this->MSG_EMAIL_REQUIRED, session('errors')->first('email'));
     }
 
-    /** ②パスワード未入力 */
+    /** ②パスワードが未入力の場合、バリデーションメッセージが表示される */
     public function test_password_required(): void
     {
         User::factory()->admin()->create([
@@ -45,7 +45,7 @@ final class Case03_AdminLoginValidationTest extends FeatureTestCase
         $this->assertStringContainsString($this->MSG_PASSWORD_REQUIRED, session('errors')->first('password'));
     }
 
-    /** ③登録内容と一致しない場合 */
+    /** ③登録内容と一致しない場合、バリデーションメッセージが表示される */
     public function test_login_invalid(): void
     {
         User::factory()->admin()->create([

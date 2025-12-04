@@ -11,7 +11,7 @@ final class Case02_LoginValidationTest extends FeatureTestCase
 {
     use Routes;
 
-    /** ①メールアドレス未入力 */
+    /** ①メールアドレスが未入力の場合、バリデーションメッセージが表示される */
     public function test_email_required(): void
     {
         // 事前にユーザー作成
@@ -32,7 +32,7 @@ final class Case02_LoginValidationTest extends FeatureTestCase
         );
     }
 
-    /** ②パスワード未入力 */
+    /** ②パスワードが未入力の場合、バリデーションメッセージが表示される */
     public function test_password_required(): void
     {
         User::factory()->create([
@@ -52,7 +52,7 @@ final class Case02_LoginValidationTest extends FeatureTestCase
         );
     }
 
-    /** ③登録情報と一致しない（メールアドレス間違い） */
+    /** ③登録内容と一致しない場合、バリデーションメッセージが表示される */
     public function test_login_invalid_email(): void
     {
         User::factory()->create([

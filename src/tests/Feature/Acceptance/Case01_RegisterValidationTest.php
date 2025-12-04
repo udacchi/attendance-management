@@ -10,7 +10,7 @@ final class Case01_RegisterValidationTest extends FeatureTestCase
 {
     use Routes;
 
-    /** ①名前未入力 */
+    /** ①名前が未入力の場合、バリデーションメッセージが表示される */
     public function test_name_required(): void
     {
         $res = $this->post($this->ROUTE_REGISTER, [
@@ -24,7 +24,7 @@ final class Case01_RegisterValidationTest extends FeatureTestCase
         $this->assertStringContainsString($this->MSG_NAME_REQUIRED, session('errors')->first('name'));
     }
 
-    /** ②メールアドレス未入力 */
+    /** ②メールアドレスが未入力の場合、バリデーションメッセージが表示される */
     public function test_email_required(): void
     {
         $res = $this->post($this->ROUTE_REGISTER, [
@@ -38,7 +38,7 @@ final class Case01_RegisterValidationTest extends FeatureTestCase
         $this->assertStringContainsString($this->MSG_EMAIL_REQUIRED, session('errors')->first('email'));
     }
 
-    /** ③パスワード8文字未満 */
+    /** ③パスワードが8文字未満の場合、バリデーションメッセージが表示される */
     public function test_password_min_8(): void
     {
         $res = $this->post($this->ROUTE_REGISTER, [
@@ -52,7 +52,7 @@ final class Case01_RegisterValidationTest extends FeatureTestCase
         $this->assertStringContainsString($this->MSG_PASSWORD_MIN, session('errors')->first('password'));
     }
 
-    /** ④パスワード不一致 */
+    /** ④パスワードが一致しない場合、バリデーションメッセージが表示される */
     public function test_password_confirmation_must_match(): void
     {
         $res = $this->post($this->ROUTE_REGISTER, [
@@ -66,7 +66,7 @@ final class Case01_RegisterValidationTest extends FeatureTestCase
         $this->assertStringContainsString($this->MSG_PASSWORD_CONFIRM, session('errors')->first('password'));
     }
 
-    /** ⑤パスワード未入力 */
+    /** ⑤パスワードが未入力の場合、バリデーションメッセージが表示される */
     public function test_password_required(): void
     {
         $res = $this->post($this->ROUTE_REGISTER, [
@@ -80,7 +80,7 @@ final class Case01_RegisterValidationTest extends FeatureTestCase
         $this->assertStringContainsString($this->MSG_PASSWORD_REQUIRED, session('errors')->first('password'));
     }
 
-    /** ⑥登録成功 */
+    /** ⑥フォームに内容が入力されていた場合、データが正常に保存される */
     public function test_register_success(): void
     {
         $payload = [

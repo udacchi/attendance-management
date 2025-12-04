@@ -23,7 +23,7 @@ final class Case05_StatusDisplayTest extends FeatureTestCase
         return $u;
     }
 
-    /** ①勤務外 */
+    /** ①勤務外の場合、勤怠ステータスが正しく表示される */
     public function test_status_before(): void
     {
         $u = $this->login();
@@ -33,7 +33,7 @@ final class Case05_StatusDisplayTest extends FeatureTestCase
         $this->assertStringContainsString($this->LBL_STATUS_BEFORE, $res->getContent());
     }
 
-    /** ②出勤中 */
+    /** ②出勤中の場合、勤怠ステータスが正しく表示される */
     public function test_status_working(): void
     {
         $u = $this->login();
@@ -50,7 +50,7 @@ final class Case05_StatusDisplayTest extends FeatureTestCase
         $res = $this->get($this->ROUTE_STAMP);
         $this->assertStringContainsString($this->LBL_STATUS_WORKING, $res->getContent());
     }
-    /** ③休憩中 */
+    /** ③休憩中の場合、勤怠ステータスが正しく表示される */
     public function test_status_break(): void
     {
         $u = $this->login();
@@ -74,7 +74,7 @@ final class Case05_StatusDisplayTest extends FeatureTestCase
         $this->assertStringContainsString($this->LBL_STATUS_BREAK, $res->getContent());
     }
 
-    /** ④退勤済 */
+    /** ④退勤済の場合、勤怠ステータスが正しく表示される */
     public function test_status_after(): void
     {
         $u = $this->login();
