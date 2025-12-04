@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>勤怠詳細（管理者）</title>
+
+  <!-- 最小リセット -->
+  <link rel="stylesheet" href="https://unpkg.com/ress/dist/ress.min.css" />
+  <!-- 共通CSS（ユーザー／管理者どちらでも共通で使う） -->
+  <link rel="stylesheet" href="http://localhost/css/layouts/common.css" />
+
+  
+  <link rel="stylesheet" href="http://localhost/css/admin/attendance/detail.css">
+</head>
+
+
+<body>
+<header class="admin-header">
+  <div class="admin-header__inner">
+    <!-- 左：ロゴ -->
+    <a href="http://localhost/admin" class="header__logo">
+      <img src="http://localhost/images/logo.svg" alt="COACHTECH" width="370" height="36">
+    </a>
+
+    
+                  
+                  <nav class="admin-nav" aria-label="管理者ナビ">
+            <ul class="admin-nav__list">
+              <li><a href="http://localhost/admin/attendance/list" class="admin-nav__link">勤怠一覧</a></li>
+              <li><a href="http://localhost/admin/staff/list"       class="admin-nav__link">スタッフ一覧</a></li>
+              <li><a href="http://localhost/stamp_correction_request/list" class="admin-nav__link">申請一覧</a></li>
+              <li>
+                <form action="http://localhost/admin/logout" method="POST" class="adminlogout-form">
+                  <input type="hidden" name="_token" value="CFoOdH7Erkr58U3m0gjvQGKxlVhnj2IgQi0Gkjle">                  <button type="submit" class="admin-nav__link admin-nav__logout">ログアウト</button>
+                </form>
+              </li>
+            </ul>
+          </nav>
+                    </div>
+</header>
+
+
+<div class="content">
+  
+
+<div class="att-detail">
+  <div class="att-detail__inner">
+
+    <h1 class="page-title">勤怠詳細</h1>
+
+    <form method="POST"
+          action="http://localhost/admin/attendance/1/update?date=2025-12-07">
+      <input type="hidden" name="_token" value="CFoOdH7Erkr58U3m0gjvQGKxlVhnj2IgQi0Gkjle">      <input type="hidden" name="date" value="2025-12-07">
+
+      <div class="detail-card ">
+        <table class="detail-table">
+          <tbody>
+            
+            <tr>
+              <th>名前</th>
+              <td colspan="3" class="cell--center">Case13_出退勤エラー</td>
+            </tr>
+
+            
+            <tr>
+              <th>日付</th>
+              <td class="cell--center cell--ym">2025年</td>
+              <td class="cell--center cell--md" colspan="2">12月7日</td>
+            </tr>
+
+            
+            <tr>
+              <th>出勤・退勤</th>
+                              <td class="cell--inputs">
+                  <input
+                    class="chip-input time-input "
+                    type="time" name="clock_in"
+                    value="20:00" >
+                </td>
+                <td class="cell--tilde">〜</td>
+                <td class="cell--inputs">
+                  <input
+                    class="chip-input time-input "
+                    type="time" name="clock_out"
+                    value="19:00" >
+                </td>
+                          </tr>
+            
+            
+                          
+                              <tr>
+                  <th>休憩1</th>
+                  <td class="cell--inputs">
+                    <input
+                      class="chip-input time-input is-empty"
+                      type="time" name="breaks[0][start]"
+                      value="" >
+                  </td>
+                  <td class="cell--tilde">〜</td>
+                  <td class="cell--inputs">
+                    <input
+                      class="chip-input time-input is-empty"
+                      type="time" name="breaks[0][end]"
+                      value="" >
+                  </td>
+                </tr>
+                                     
+            
+
+            
+                        <tr>
+              <th>備考</th>
+                              <td colspan="3" class="cell--inputs">
+                  <textarea class="note-box" name="note" rows="2" >テスト</textarea>
+                </td>
+                          </tr>
+            
+          </tbody>
+        </table>
+      </div>
+
+      
+      <div class="detail-actions">
+                  <button type="submit" class="btn-primary">修正</button>
+              </div>
+
+      
+          </form>
+
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('input', (e) => {
+  if (e.target.matches('input[type="time"].time-input')) {
+    e.target.classList.toggle('is-empty', !e.target.value);
+  }
+});
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('input[type="time"].time-input').forEach(el => {
+    el.classList.toggle('is-empty', !el.value);
+  });
+});
+</script>
+
+</div>
+
+</body>
+</html>
