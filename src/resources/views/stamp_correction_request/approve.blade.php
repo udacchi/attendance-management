@@ -20,6 +20,7 @@
   $clockIn  = $normHM($record['clock_in']  ?? '');
   $clockOut = $normHM($record['clock_out'] ?? '');
 
+  // 元の breaks（空行は来ない想定）を正規化
   $breaks = [];
   foreach (($record['breaks'] ?? []) as $b) {
       $breaks[] = [
@@ -27,7 +28,14 @@
           'end'   => $normHM($b['end']   ?? ''),
       ];
   }
+
+  // ★ ここがポイント：最低 2 行は表示（不足分は空行でパディング）
+  $minRows = 2;
+  for ($i = count($breaks); $i < $minRows; $i++) {
+      $breaks[] = ['start' => '', 'end' => ''];
+  }
 @endphp
+
 
 <div class="approve-page">
   <div class="approve-page__inner">
@@ -63,9 +71,13 @@
           </tr>
 
           {{-- 休憩（未入力は空白表示。--:-- は空に変換済み） --}}
+          {{-- 休憩（未入力は空白表示。--:-- は空に変換済み） --}}
           @foreach ($breaks as $i => $b)
+            @php
+              $label = $i === 0 ? '休憩' : '休憩' . ($i + 1);
+            @endphp
             <tr>
-              <th class="cell">休憩{{ $i + 1 }}</th>
+              <th class="cell">{{ $label }}</th>
               <td class="cell--inputs">
                 <span class="chip-text">{{ $b['start'] }}</span>
               </td>

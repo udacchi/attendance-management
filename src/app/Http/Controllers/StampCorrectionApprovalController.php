@@ -120,9 +120,13 @@ class StampCorrectionApprovalController extends Controller
             }
         }
         // 空行（start/end 両方空）は除去
-        $breaks = array_values(array_filter($breaks, fn($b) => ($b['start'] ?? '') !== '' || ($b['end'] ?? '') !== ''));
-        // 承認待ちの時だけ、見やすさ用に末尾へ空1行
-        if ($isPending) $breaks[] = ['start' => '', 'end' => ''];
+        $breaks = array_values($breaks);
+
+        // ★ 承認前後に関係なく、最低2行は表示させる（不足分は空行でパディング）
+        $minRows = 2;
+        for ($i = count($breaks); $i < $minRows; $i++) {
+            $breaks[] = ['start' => '', 'end' => ''];
+        }
 
         /** 出勤・退勤 **/
         $clockIn = $firstNonEmpty(
