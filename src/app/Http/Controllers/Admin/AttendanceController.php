@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Schema;
 
 use App\Models\AttendanceDay;
 use App\Models\User;
-use App\Models\CorrectionLog;
 use App\Models\CorrectionRequest;
 use App\Http\Requests\Admin\AttendanceUpdateRequest;
 use Symfony\Component\HttpFoundation\StreamedResponse;

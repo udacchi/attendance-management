@@ -26,7 +26,7 @@ class LoginRequest extends FormRequest
             'email.required'    => 'メールアドレスを入力してください',
             'password.required' => 'パスワードを入力してください',
 
-            // 形式エラーがあった場合（お好みで変更可）
+            // 形式エラーがあった場合
             'email.email'       => 'メールアドレスの形式で入力してください',
         ];
     }
